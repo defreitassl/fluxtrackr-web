@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { type LoginFormValues, loginSchema } from "@/features/auth/login-schema";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 type LoginResponse = {
   message?: string;
@@ -42,7 +43,7 @@ export function LoginForm() {
     }
 
     const next = searchParams.get("next");
-    router.replace(next?.startsWith("/") ? next : "/dashboard");
+    router.replace(safeRedirectPath(next));
     router.refresh();
   }
 

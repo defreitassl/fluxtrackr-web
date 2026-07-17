@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import type { AccessToken, LoginRequest } from "@/api/generated/client";
 import { sessionCookieOptions, SESSION_COOKIE_NAME } from "@/lib/auth-cookie";
-import { getApiUrl } from "@/lib/api-server";
+import { API_REQUEST_TIMEOUT_MS, getApiUrl } from "@/lib/api-server";
 import { loginSchema } from "@/features/auth/login-schema";
 
 export const runtime = "nodejs";
@@ -19,16 +19,19 @@ export async function POST(request: Request) {
   }
 
   const credentials: LoginRequest = parsed.data;
-  const upstream = await fetch(getApiUrl("/auth/login"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(credentials),
-    cache: "no-store",
-  }).catch(() => null);
+  let upstream: Response;
 
-  if (!upstream) {
+  try {
+    upstream = await fetch(getApiUrl("/auth/login"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(credentials),
+      cache: "no-store",
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+    });
+  } catch {
     return NextResponse.json(
-      { message: "Não foi possível conectar à API do FluxTrackr." },
+      { message: "Serviço indisponível. Tente novamente." },
       { status: 503 },
     );
   }

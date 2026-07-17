@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import { SESSION_COOKIE_NAME } from "@/lib/auth-cookie";
-import { getApiUrl } from "@/lib/api-server";
+import { API_REQUEST_TIMEOUT_MS, getApiUrl } from "@/lib/api-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,11 +42,16 @@ async function forward(request: NextRequest, context: Context) {
     init.body = await request.arrayBuffer();
   }
 
-  const upstream = await fetch(upstreamUrl, init).catch(() => null);
+  let upstream: Response;
 
-  if (!upstream) {
+  try {
+    upstream = await fetch(upstreamUrl, {
+      ...init,
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+    });
+  } catch {
     return NextResponse.json(
-      { message: "API indisponível." },
+      { message: "Serviço indisponível. Tente novamente." },
       { status: 503 },
     );
   }
