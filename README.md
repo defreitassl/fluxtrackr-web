@@ -1,34 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FluxTrackr Web
 
-## Getting Started
+Frontend desktop do FluxTrackr. Esta etapa prepara autenticação, App Shell e
+cliente tipado da API; telas financeiras continuam fora do recorte.
 
-First, run the development server:
+## Stack
+
+- Next.js 16, React 19 e TypeScript estrito
+- Tailwind CSS 4 para base de estilos e tokens CSS do produto
+- TanStack Query, React Hook Form, Zod, Lucide e clsx
+- Orval gerando cliente Fetch a partir do contrato OpenAPI
+
+## Configuração
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Defina `FLUXTRACKR_API_URL` com origem da API, por exemplo
+`http://localhost:3001`. A variável é apenas server-side: não use
+`NEXT_PUBLIC_` e nunca adicione token ao arquivo de ambiente.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Comandos
 
-## Learn More
+```bash
+npm run api:generate # gera src/api/generated/client.ts
+npm run api:check    # regenera e acusa cliente versionado desatualizado
+npm run dev
+npm run lint
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Estrutura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+src/
+├── api/generated/   # saída do Orval; não editar manualmente
+├── app/             # App Router e Route Handlers BFF
+├── components/      # shell e estados reutilizáveis
+├── features/        # auth e placeholders iniciais
+├── lib/             # HTTP, sessão, formatação e ambiente
+├── providers/       # Query, sessão e tema
+└── styles/          # Tailwind + tokens CSS FluxTrackr
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Autenticação
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`/login` envia credenciais para `POST /api/auth/login`. Esse Route Handler
+chama `POST /auth/login` da API e guarda somente o JWT em cookie `httpOnly`,
+`Secure` em produção e `SameSite=Lax`. O navegador não lê nem envia Bearer
+token diretamente: chamadas geradas pelo Orval passam por
+`/api/fluxtrackr/*`, que adiciona `Authorization` no servidor. `401` remove a
+sessão e leva o usuário ao login. Não há refresh token, por limitação atual da
+API.
