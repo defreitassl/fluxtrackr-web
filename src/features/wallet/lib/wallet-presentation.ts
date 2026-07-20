@@ -1,4 +1,6 @@
-import type { AccountType, CreditCardInvoiceStatus } from "@/api/generated/client";
+import type { AccountType } from "@/api/generated/client";
+
+export { getInvoiceStatusLabel } from "@/lib/financial-presentation";
 
 const accountTypeLabels: Record<AccountType, string> = {
   checking: "Conta corrente",
@@ -9,13 +11,9 @@ const accountTypeLabels: Record<AccountType, string> = {
   other: "Outra conta",
 };
 
-const invoiceStatusLabels: Record<CreditCardInvoiceStatus, string> = {
-  open: "Em aberto",
-  closed: "Fechada",
-  paid: "Paga",
-  overdue: "Vencida",
-  canceled: "Cancelada",
-};
+export const ACCOUNT_TYPE_OPTIONS = (Object.keys(accountTypeLabels) as AccountType[]).map(
+  (value) => ({ value, label: accountTypeLabels[value] }),
+);
 
 const utcDateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "medium",
@@ -30,10 +28,6 @@ const utcDateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
 
 export function getAccountTypeLabel(type: AccountType) {
   return accountTypeLabels[type];
-}
-
-export function getInvoiceStatusLabel(status: CreditCardInvoiceStatus) {
-  return invoiceStatusLabels[status];
 }
 
 export function formatUtcDate(value: string) {

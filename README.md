@@ -83,21 +83,51 @@ deixar explícita a mesma regra usada nas fronteiras e no agrupamento financeiro
 
 ## Carteira
 
-`/wallet` é uma tela somente de leitura. Ela reutiliza o panorama de
-`GET /dashboard-overview` pela mesma query key `['dashboard-overview']` e
-compõe a consulta própria:
+`/wallet` reutiliza o panorama de `GET /dashboard-overview` pela mesma query
+key `['dashboard-overview']` e compõe a consulta própria:
 
 ```ts
 ["wallet-overview", { year, month }]
 ```
 
-`year` e `month` são obtidos em UTC. A tela usa `GET /accounts`, consulta
-`GET /accounts/:id/balance` em paralelo para cada conta retornada, além de
-`GET /credit-cards?isActive=true` e
-`GET /credit-card-invoices?year=&month=`. A API continua sendo a fonte de
-todos os saldos, disponível para gastar, limite configurado e valores de
-fatura: o frontend não soma, não recalcula limite e não implementa pagamentos
-ou qualquer CRUD neste recorte.
+`year` e `month` são obtidos em UTC por `useCurrentWalletPeriod`, que recalcula
+o período no mount, ao recuperar o foco da janela, no `visibilitychange` visível
+e antes de uma atualização manual — sem polling nem timers. A leitura usa
+`GET /accounts`, `GET /accounts/:id/balance` em paralelo por conta,
+`GET /credit-cards?isActive=true` e `GET /credit-card-invoices?year=&month=`. A
+API continua sendo a fonte de todos os saldos, disponível para gastar, limite e
+valores de fatura: o frontend não soma nem recalcula.
+
+O panorama distingue três estados do Dashboard — carregando, disponível e
+indisponível — sem confundir carregamento com ausência de próxima fatura. A
+atualização é coordenada entre Carteira e Dashboard; falhas parciais mostram um
+único alerta e mantêm os dados anteriores visíveis. A seleção separa
+`selectedCardId` de `selectedInvoiceId`: todo cartão ativo é selecionável (mesmo
+sem fatura) e faturas cujo cartão não está na lista ativa continuam acessíveis,
+somente leitura, em “Outras faturas do mês”.
+
+### Gestão de contas
+
+A Carteira permite **criar** e **editar metadados** de contas:
+
+- `POST /accounts` cria a conta; `PATCH /accounts/{id}` edita metadados.
+- O **saldo inicial** (`initialBalance`) é obrigatório e definido **somente na
+  criação**; a tela de edição não o expõe. Correções de saldo terão um fluxo
+  próprio de ajuste (ainda fora deste recorte).
+- Campos: nome, banco (opcional), tipo, cor (opcional) e ícone (opcional); na
+  criação também o saldo inicial. Na criação, campos opcionais vazios são
+  omitidos; na edição, um valor apagado é enviado como `null`.
+- Formulários com React Hook Form + Zod + `zodResolver`; diálogo acessível
+  reutilizável em `src/components/ui/dialog.tsx` (foco controlado, retorno de
+  foco ao acionador, `aria-modal`, fechamento por Escape, bloqueio durante
+  envio), sem biblioteca externa de overlays nem de toast.
+- Após criar ou editar, as mutations invalidam `['wallet-overview']` e
+  `['dashboard-overview']`; não há atualização otimista de valores financeiros.
+  A conta criada/editada permanece selecionada após o refetch e o sucesso é
+  comunicado por feedback inline com `role="status"`.
+- **Arquivamento fora do escopo:** a API atual apenas define `isActive=false` e
+  ainda não possui política consolidada para dependências ativas, então nenhuma
+  ação de arquivar/excluir/transferir é exposta.
 
 ## Validação local integrada
 
