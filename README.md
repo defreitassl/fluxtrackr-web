@@ -112,8 +112,8 @@ A Carteira permite **criar** e **editar metadados** de contas:
 
 - `POST /accounts` cria a conta; `PATCH /accounts/{id}` edita metadados.
 - O **saldo inicial** (`initialBalance`) é obrigatório e definido **somente na
-  criação**; a tela de edição não o expõe. Correções de saldo terão um fluxo
-  próprio de ajuste (ainda fora deste recorte).
+  criação**; a tela de edição não o expõe. Correções usam o fluxo próprio de
+  ajuste de saldo, sem alterar retrospectivamente a composição financeira.
 - Campos: nome, banco (opcional), tipo, cor (opcional) e ícone (opcional); na
   criação também o saldo inicial. Na criação, campos opcionais vazios são
   omitidos; na edição, um valor apagado é enviado como `null`.
@@ -128,6 +128,21 @@ A Carteira permite **criar** e **editar metadados** de contas:
 - **Arquivamento fora do escopo:** a API atual apenas define `isActive=false` e
   ainda não possui política consolidada para dependências ativas, então nenhuma
   ação de arquivar/excluir/transferir é exposta.
+
+### Ajuste de saldo e histórico
+
+No detalhe da conta selecionada, **Ajustar saldo** usa `POST
+/accounts/{accountId}/balance-adjustments` e envia somente `newBalance` como
+string decimal canônica e `reason` opcional. A API calcula e persiste o saldo
+anterior e a diferença; o Web não calcula diferença, não cria transação e não
+faz atualização otimista. O formulário aceita saldo negativo, zero e o mesmo
+saldo atual.
+
+O histórico usa `GET /accounts/{accountId}/balance-adjustments`, preserva a
+ordem da API e exibe inicialmente até cinco itens. Depois de um ajuste, a
+mutation invalida `['account-balance-adjustments', accountId]`,
+`['wallet-overview']`, `['dashboard-overview']` e `['financial-timeline']`.
+Transferências e arquivamento continuam fora deste recorte.
 
 ## Validação local integrada
 

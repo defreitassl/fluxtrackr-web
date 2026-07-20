@@ -11,7 +11,7 @@ import {
   toUpdateAccountPayload,
 } from "@/features/wallet/accounts/lib/account-form-mappers";
 import { useUpdateAccount } from "@/features/wallet/accounts/mutations/use-update-account";
-import type { AccountFormValues } from "@/features/wallet/accounts/schemas/account-form-schema";
+import type { EditAccountFormValues } from "@/features/wallet/accounts/schemas/account-form-schema";
 
 type EditAccountDialogProps = {
   account: Account | null;
@@ -28,7 +28,7 @@ export function EditAccountDialog({ account, open, onClose, onUpdated }: EditAcc
     return null;
   }
 
-  async function handleSubmit(values: AccountFormValues) {
+  async function handleSubmit(values: EditAccountFormValues) {
     setSubmitError(null);
     try {
       const updated = await mutation.mutateAsync({
@@ -46,6 +46,7 @@ export function EditAccountDialog({ account, open, onClose, onUpdated }: EditAcc
       busy={mutation.isPending}
       description="Atualize apenas os metadados da conta. O saldo inicial permanece inalterado."
       descriptionId="edit-account-description"
+      initialFocusSelector="#edit-account-name"
       onClose={onClose}
       open={open}
       title="Editar conta"

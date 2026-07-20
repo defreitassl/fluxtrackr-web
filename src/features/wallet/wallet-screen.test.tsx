@@ -3,12 +3,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/features/wallet/queries/use-wallet-overview", () => ({ useWalletOverview: vi.fn() }));
 vi.mock("@/features/dashboard/queries/use-dashboard-overview", () => ({ useDashboardOverview: vi.fn() }));
+vi.mock("@/features/wallet/hooks/use-current-wallet-period", () => ({ useCurrentWalletPeriod: vi.fn() }));
 vi.mock("@/features/wallet/accounts/mutations/use-create-account", () => ({ useCreateAccount: vi.fn() }));
 vi.mock("@/features/wallet/accounts/mutations/use-update-account", () => ({ useUpdateAccount: vi.fn() }));
+vi.mock("@/features/wallet/adjustments/mutations/use-create-balance-adjustment", () => ({ useCreateBalanceAdjustment: vi.fn() }));
+vi.mock("@/features/wallet/adjustments/queries/use-account-balance-adjustments", () => ({ useAccountBalanceAdjustments: vi.fn() }));
 
 import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
+import { useCurrentWalletPeriod } from "@/features/wallet/hooks/use-current-wallet-period";
 import { useCreateAccount } from "@/features/wallet/accounts/mutations/use-create-account";
 import { useUpdateAccount } from "@/features/wallet/accounts/mutations/use-update-account";
+import { useCreateBalanceAdjustment } from "@/features/wallet/adjustments/mutations/use-create-balance-adjustment";
+import { useAccountBalanceAdjustments } from "@/features/wallet/adjustments/queries/use-account-balance-adjustments";
 import { useWalletOverview } from "@/features/wallet/queries/use-wallet-overview";
 import { WalletScreen } from "@/features/wallet/wallet-screen";
 
@@ -51,7 +57,19 @@ function mockWallet(overrides: Record<string, unknown> = {}) {
     isPending: false, isError: false, isFetching: false, isRefetchError: false, refetch,
     ...overrides,
   } as never);
+  mockWalletPeriod();
+  mockAdjustmentHistory();
   return refetch;
+}
+
+function mockWalletPeriod(overrides: Record<string, unknown> = {}) {
+  const refreshPeriod = vi.fn().mockReturnValue({ period: { year: 2026, month: 7 }, changed: false });
+  vi.mocked(useCurrentWalletPeriod).mockReturnValue({
+    period: { year: 2026, month: 7 },
+    refreshPeriod,
+    ...overrides,
+  });
+  return refreshPeriod;
 }
 
 function mockDashboard(overrides: Record<string, unknown> = {}) {
@@ -64,6 +82,16 @@ function mockDashboard(overrides: Record<string, unknown> = {}) {
   return refetch;
 }
 
+function mockAdjustmentHistory(overrides: Record<string, unknown> = {}) {
+  vi.mocked(useAccountBalanceAdjustments).mockReturnValue({
+    data: [],
+    isPending: false,
+    isError: false,
+    refetch: vi.fn(),
+    ...overrides,
+  } as never);
+}
+
 function mockMutations() {
   vi.mocked(useCreateAccount).mockReturnValue({
     mutateAsync: vi.fn().mockResolvedValue({ ...account, id: "account-new", name: "Conta nova" }),
@@ -73,6 +101,16 @@ function mockMutations() {
     mutateAsync: vi.fn().mockResolvedValue({ ...account, name: "Conta editada" }),
     isPending: false, reset: vi.fn(),
   } as never);
+  const balanceAdjustmentMutate = vi.fn().mockResolvedValue({
+      adjustment: { id: "adjustment-1", accountId: "account-1" },
+      currentBalance: "200.50",
+    });
+  vi.mocked(useCreateBalanceAdjustment).mockReturnValue({
+    mutateAsync: balanceAdjustmentMutate,
+    isPending: false,
+    reset: vi.fn(),
+  } as never);
+  return { balanceAdjustmentMutate };
 }
 
 describe("WalletScreen", () => {
@@ -112,6 +150,34 @@ describe("WalletScreen", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "As contas e cartões foram atualizados, mas o panorama financeiro pode estar desatualizado.",
     );
+  });
+
+  it("refetches both views when a manual refresh remains in the same UTC month", () => {
+    const walletRefetch = mockWallet();
+    const dashboardRefetch = mockDashboard();
+    mockMutations();
+    render(<WalletScreen />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Atualizar Carteira" }));
+
+    expect(walletRefetch).toHaveBeenCalledWith({ cancelRefetch: false });
+    expect(dashboardRefetch).toHaveBeenCalledWith({ cancelRefetch: false });
+  });
+
+  it("does not refetch the previous wallet query when the UTC month changes", () => {
+    const walletRefetch = mockWallet();
+    const dashboardRefetch = mockDashboard();
+    mockWalletPeriod({
+      period: { year: 2026, month: 12 },
+      refreshPeriod: vi.fn().mockReturnValue({ period: { year: 2027, month: 1 }, changed: true }),
+    });
+    mockMutations();
+    render(<WalletScreen />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Atualizar Carteira" }));
+
+    expect(walletRefetch).not.toHaveBeenCalled();
+    expect(dashboardRefetch).toHaveBeenCalledWith({ cancelRefetch: false });
   });
 
   it("does not treat a loading Dashboard as an absent invoice", () => {
@@ -180,10 +246,51 @@ describe("WalletScreen", () => {
 
     expect(screen.getByRole("dialog", { name: "Editar conta" })).toBeInTheDocument();
     expect(screen.getByLabelText("Nome")).toHaveValue("Conta principal");
+    expect(screen.getByLabelText("Nome")).toHaveFocus();
     expect(screen.queryByLabelText("Saldo inicial")).not.toBeInTheDocument();
     expect(
       screen.getByText(/O saldo inicial não pode ser alterado por esta tela/),
     ).toBeInTheDocument();
+  });
+
+  it("uses native radios for account color and icon choices", () => {
+    mockWallet();
+    mockDashboard();
+    mockMutations();
+    render(<WalletScreen />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Nova conta/ }));
+    const green = screen.getByRole("radio", { name: "Verde" });
+    const blue = screen.getByRole("radio", { name: "Azul" });
+
+    fireEvent.click(green);
+    expect(green).toBeChecked();
+    expect(blue).not.toBeChecked();
+    expect(screen.getAllByRole("radio", { name: /Sem cor|Verde|Azul|Roxo|Vermelho|Âmbar|Turquesa|Cor atual/ })).toHaveLength(7);
+  });
+
+  it("opens the adjustment dialog, sends the canonical decimal and keeps the account selected", async () => {
+    mockWallet();
+    mockDashboard();
+    const { balanceAdjustmentMutate } = mockMutations();
+    render(<WalletScreen />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Ajustar saldo" }));
+    const input = screen.getByLabelText("Novo saldo");
+    expect(input).toHaveFocus();
+    expect(screen.getByText("Saldo atual retornado pela API")).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "200,50" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar ajuste" }));
+
+    await waitFor(() =>
+      expect(balanceAdjustmentMutate).toHaveBeenCalledWith({
+        accountId: "account-1",
+        payload: { newBalance: "200.50" },
+      }),
+    );
+    expect(await screen.findByText(/Saldo ajustado para R\$\s?200,50\./)).toHaveAttribute("role", "status");
+    expect(screen.getByRole("button", { name: /Conta principal/ })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("closes the dialog with Escape and returns focus to the trigger", async () => {

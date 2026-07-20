@@ -1,12 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getCurrentUtcWalletPeriod, type WalletPeriod } from "@/features/wallet/lib/wallet-period";
 
 function isSamePeriod(a: WalletPeriod, b: WalletPeriod) {
   return a.year === b.year && a.month === b.month;
 }
+
+export type RefreshWalletPeriodResult = {
+  period: WalletPeriod;
+  changed: boolean;
+};
 
 /**
  * Mantém o período UTC atual da Carteira sem congelá-lo durante toda a vida do
@@ -18,11 +23,19 @@ function isSamePeriod(a: WalletPeriod, b: WalletPeriod) {
  */
 export function useCurrentWalletPeriod() {
   const [period, setPeriod] = useState<WalletPeriod>(() => getCurrentUtcWalletPeriod());
+  const periodRef = useRef(period);
 
-  const refreshPeriod = useCallback(() => {
+  const refreshPeriod = useCallback((): RefreshWalletPeriodResult => {
     const next = getCurrentUtcWalletPeriod();
-    setPeriod((current) => (isSamePeriod(current, next) ? current : next));
-    return next;
+    const current = periodRef.current;
+    const changed = !isSamePeriod(current, next);
+
+    if (changed) {
+      periodRef.current = next;
+      setPeriod(next);
+    }
+
+    return { period: changed ? next : current, changed };
   }, []);
 
   useEffect(() => {

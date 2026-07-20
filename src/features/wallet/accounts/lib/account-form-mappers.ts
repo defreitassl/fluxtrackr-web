@@ -2,9 +2,11 @@ import type { Account, CreateAccountRequest, UpdateAccountRequest } from "@/api/
 import {
   ACCOUNT_ICON_OPTIONS,
   HEX_COLOR_PATTERN,
-  type AccountFormValues,
+  type CreateAccountFormValues,
+  type EditAccountFormValues,
   type AccountIconValue,
 } from "@/features/wallet/accounts/schemas/account-form-schema";
+import { parseFiniteMoneyNumber } from "@/lib/money-input";
 
 const ICON_VALUES = new Set<string>(ACCOUNT_ICON_OPTIONS.map((option) => option.value));
 
@@ -16,42 +18,35 @@ function normalizeColor(color: string | null): string {
   return color && HEX_COLOR_PATTERN.test(color) ? color : "";
 }
 
-/** Converte o texto do saldo em número apenas ao construir o payload. */
-function parseBalance(value: string): number {
-  return Number(value.trim().replace(",", "."));
-}
-
-export function defaultCreateAccountFormValues(): AccountFormValues {
+export function defaultCreateAccountFormValues(): CreateAccountFormValues {
   return { name: "", bank: "", type: "checking", color: "", icon: "", initialBalance: "" };
 }
 
-export function toEditAccountFormValues(account: Account): AccountFormValues {
+export function toEditAccountFormValues(account: Account): EditAccountFormValues {
   return {
     name: account.name,
     bank: account.bank ?? "",
     type: account.type,
     color: normalizeColor(account.color),
     icon: normalizeIcon(account.icon),
-    // Preenchido apenas para satisfazer o schema; nunca enviado na edição.
-    initialBalance: account.initialBalance,
   };
 }
 
-export function toCreateAccountPayload(values: AccountFormValues): CreateAccountRequest {
+export function toCreateAccountPayload(values: CreateAccountFormValues): CreateAccountRequest {
   const bank = values.bank.trim();
   const color = values.color.trim();
 
   return {
     name: values.name.trim(),
     type: values.type,
-    initialBalance: parseBalance(values.initialBalance),
+    initialBalance: parseFiniteMoneyNumber(values.initialBalance),
     ...(bank ? { bank } : {}),
     ...(color ? { color } : {}),
     ...(values.icon ? { icon: values.icon } : {}),
   };
 }
 
-export function toUpdateAccountPayload(values: AccountFormValues): UpdateAccountRequest {
+export function toUpdateAccountPayload(values: EditAccountFormValues): UpdateAccountRequest {
   const bank = values.bank.trim();
   const color = values.color.trim();
 

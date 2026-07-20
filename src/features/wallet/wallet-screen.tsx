@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { Account } from "@/api/generated/client";
+import type { Account, CreateBalanceAdjustmentResponse } from "@/api/generated/client";
 import { ErrorState } from "@/components/ui/error-state";
 import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
 import { CreateAccountDialog } from "@/features/wallet/accounts/components/create-account-dialog";
 import { EditAccountDialog } from "@/features/wallet/accounts/components/edit-account-dialog";
+import { BalanceAdjustmentDialog } from "@/features/wallet/adjustments/components/balance-adjustment-dialog";
+import type { WalletAccount } from "@/features/wallet/api/get-wallet-overview";
 import { AccountsSection } from "@/features/wallet/components/accounts-section";
 import { CreditCardsSection } from "@/features/wallet/components/credit-cards-section";
 import { EmptyWallet } from "@/features/wallet/components/wallet-empty-states";
@@ -17,6 +19,7 @@ import { WalletSummary } from "@/features/wallet/components/wallet-summary";
 import { useCurrentWalletPeriod } from "@/features/wallet/hooks/use-current-wallet-period";
 import { resolveWalletCardSelection } from "@/features/wallet/lib/wallet-selection";
 import { useWalletOverview } from "@/features/wallet/queries/use-wallet-overview";
+import { formatCurrency } from "@/lib/format";
 
 const SUCCESS_MESSAGE_TIMEOUT = 5000;
 
@@ -30,6 +33,7 @@ export function WalletScreen() {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [adjustingAccount, setAdjustingAccount] = useState<WalletAccount | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -79,7 +83,14 @@ export function WalletScreen() {
     if (isRefreshing) {
       return;
     }
-    refreshPeriod();
+    const { changed } = refreshPeriod();
+    if (changed) {
+      // A nova query key da Carteira busca o período UTC recém-calculado.
+      // Não refetchamos a chave anterior durante a troca de mês.
+      void dashboard.refetch({ cancelRefetch: false });
+      return;
+    }
+
     void Promise.all([
       wallet.refetch({ cancelRefetch: false }),
       dashboard.refetch({ cancelRefetch: false }),
@@ -102,6 +113,11 @@ export function WalletScreen() {
     setEditingAccount(account);
   };
 
+  const handleAdjustAccount = (walletAccount: WalletAccount) => {
+    setSuccessMessage(null);
+    setAdjustingAccount(walletAccount);
+  };
+
   const handleAccountCreated = (account: Account) => {
     setSelectedAccountId(account.id);
     setIsCreateOpen(false);
@@ -112,6 +128,12 @@ export function WalletScreen() {
     setSelectedAccountId(account.id);
     setEditingAccount(null);
     showSuccess("Conta atualizada com sucesso.");
+  };
+
+  const handleBalanceAdjusted = (response: CreateBalanceAdjustmentResponse) => {
+    setSelectedAccountId(response.adjustment.accountId);
+    setAdjustingAccount(null);
+    showSuccess(`Saldo ajustado para ${formatCurrency(response.currentBalance)}.`);
   };
 
   const isWalletEmpty = data
@@ -159,6 +181,7 @@ export function WalletScreen() {
             <div className="wallet-sections">
               <AccountsSection
                 accounts={data.accounts}
+                onAdjustAccount={handleAdjustAccount}
                 onCreateAccount={handleCreateAccount}
                 onEditAccount={handleEditAccount}
                 onSelectAccount={setSelectedAccountId}
@@ -193,6 +216,15 @@ export function WalletScreen() {
           account={editingAccount}
           onClose={() => setEditingAccount(null)}
           onUpdated={handleAccountUpdated}
+          open
+        />
+      ) : null}
+      {adjustingAccount ? (
+        <BalanceAdjustmentDialog
+          account={adjustingAccount.account}
+          currentBalance={adjustingAccount.balance.currentBalance}
+          onAdjusted={handleBalanceAdjusted}
+          onClose={() => setAdjustingAccount(null)}
           open
         />
       ) : null}

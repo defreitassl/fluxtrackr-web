@@ -6,9 +6,12 @@ import {
   toEditAccountFormValues,
   toUpdateAccountPayload,
 } from "@/features/wallet/accounts/lib/account-form-mappers";
-import type { AccountFormValues } from "@/features/wallet/accounts/schemas/account-form-schema";
+import type {
+  CreateAccountFormValues,
+  EditAccountFormValues,
+} from "@/features/wallet/accounts/schemas/account-form-schema";
 
-const values: AccountFormValues = {
+const createValues: CreateAccountFormValues = {
   name: "  Conta principal  ",
   bank: "  Banco Local  ",
   type: "savings",
@@ -17,9 +20,17 @@ const values: AccountFormValues = {
   initialBalance: "1000,50",
 };
 
+const editValues: EditAccountFormValues = {
+  name: createValues.name,
+  bank: createValues.bank,
+  type: createValues.type,
+  color: createValues.color,
+  icon: createValues.icon,
+};
+
 describe("toCreateAccountPayload", () => {
   it("trims the name, normalizes the balance and includes optional fields", () => {
-    expect(toCreateAccountPayload(values)).toEqual({
+    expect(toCreateAccountPayload(createValues)).toEqual({
       name: "Conta principal",
       type: "savings",
       initialBalance: 1000.5,
@@ -30,7 +41,7 @@ describe("toCreateAccountPayload", () => {
   });
 
   it("omits empty optional fields on creation", () => {
-    const payload = toCreateAccountPayload({ ...values, bank: "  ", color: "", icon: "" });
+    const payload = toCreateAccountPayload({ ...createValues, bank: "  ", color: "", icon: "" });
     expect(payload).not.toHaveProperty("bank");
     expect(payload).not.toHaveProperty("color");
     expect(payload).not.toHaveProperty("icon");
@@ -40,7 +51,7 @@ describe("toCreateAccountPayload", () => {
 
 describe("toUpdateAccountPayload", () => {
   it("sends null when the user clears optional fields and never sends initialBalance", () => {
-    const payload = toUpdateAccountPayload({ ...values, bank: "  ", color: "", icon: "" });
+    const payload = toUpdateAccountPayload({ ...editValues, bank: "  ", color: "", icon: "" });
     expect(payload).toEqual({
       name: "Conta principal",
       type: "savings",
@@ -52,7 +63,7 @@ describe("toUpdateAccountPayload", () => {
   });
 
   it("keeps filled metadata", () => {
-    expect(toUpdateAccountPayload(values)).toEqual({
+    expect(toUpdateAccountPayload(editValues)).toEqual({
       name: "Conta principal",
       type: "savings",
       bank: "Banco Local",
@@ -80,7 +91,6 @@ describe("toEditAccountFormValues", () => {
       type: "checking",
       color: "",
       icon: "",
-      initialBalance: "100.00",
     });
   });
 });

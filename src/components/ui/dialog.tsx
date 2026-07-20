@@ -11,6 +11,8 @@ type DialogProps = {
   description?: string;
   titleId: string;
   descriptionId?: string;
+  /** Seletor do elemento que deve receber foco ao abrir o diálogo. */
+  initialFocusSelector?: string;
   /** Quando verdadeiro, impede fechar por Escape, overlay ou botão (durante envio). */
   busy?: boolean;
   children: ReactNode;
@@ -25,6 +27,21 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
+function getFocusableElements(panel: HTMLDivElement | null) {
+  return Array.from(panel?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ?? []);
+}
+
+function getInitialFocusTarget(panel: HTMLDivElement | null, selector?: string) {
+  const explicitTarget = selector ? panel?.querySelector<HTMLElement>(selector) : null;
+  if (explicitTarget && !explicitTarget.matches(":disabled")) {
+    return explicitTarget;
+  }
+
+  return getFocusableElements(panel).find(
+    (element) => !element.hasAttribute("data-dialog-close"),
+  ) ?? panel;
+}
+
 /**
  * Diálogo modal acessível e reutilizável, sem biblioteca externa de overlays.
  * Controla foco inicial, retorno de foco ao acionador, `aria-modal`, fechamento
@@ -37,6 +54,7 @@ export function Dialog({
   description,
   titleId,
   descriptionId,
+  initialFocusSelector,
   busy = false,
   children,
 }: DialogProps) {
@@ -59,14 +77,13 @@ export function Dialog({
     const previousOverflow = body.style.overflow;
     body.style.overflow = "hidden";
 
-    const focusables = panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-    (focusables?.[0] ?? panelRef.current)?.focus();
+    getInitialFocusTarget(panelRef.current, initialFocusSelector)?.focus();
 
     return () => {
       body.style.overflow = previousOverflow;
       previousFocusRef.current?.focus?.();
     };
-  }, [open]);
+  }, [initialFocusSelector, open]);
 
   useEffect(() => {
     if (!open) {
@@ -84,9 +101,10 @@ export function Dialog({
         return;
       }
 
-      const focusables = panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-      if (!focusables || focusables.length === 0) {
+      const focusables = getFocusableElements(panelRef.current);
+      if (focusables.length === 0) {
         event.preventDefault();
+        panelRef.current?.focus();
         return;
       }
 
@@ -94,7 +112,10 @@ export function Dialog({
       const last = focusables[focusables.length - 1];
       const active = document.activeElement;
 
-      if (event.shiftKey && active === first) {
+      if (!panelRef.current?.contains(active)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && active === first) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && active === last) {
@@ -131,6 +152,7 @@ export function Dialog({
           <button
             aria-label="Fechar"
             className="dialog-close"
+            data-dialog-close
             disabled={busy}
             onClick={requestClose}
             type="button"

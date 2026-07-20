@@ -53,17 +53,31 @@ describe("useCurrentWalletPeriod", () => {
     expect(result.current.period).toBe(initialPeriod);
   });
 
-  it("returns the freshly computed period from a manual refresh", () => {
+  it("returns the freshly computed period and changed flag from a manual refresh", () => {
     vi.mocked(getCurrentUtcWalletPeriod).mockReturnValue(december);
     const { result } = renderHook(() => useCurrentWalletPeriod());
 
     vi.mocked(getCurrentUtcWalletPeriod).mockReturnValue(january);
-    let refreshed: { year: number; month: number } | undefined;
+    let refreshed: { period: { year: number; month: number }; changed: boolean } | undefined;
     act(() => {
       refreshed = result.current.refreshPeriod();
     });
 
-    expect(refreshed).toEqual(january);
+    expect(refreshed).toEqual({ period: january, changed: true });
     expect(result.current.period).toEqual(january);
+  });
+
+  it("returns the current period reference and changed=false when the month is unchanged", () => {
+    vi.mocked(getCurrentUtcWalletPeriod).mockReturnValue(december);
+    const { result } = renderHook(() => useCurrentWalletPeriod());
+    const initialPeriod = result.current.period;
+
+    let refreshed: { period: { year: number; month: number }; changed: boolean } | undefined;
+    act(() => {
+      refreshed = result.current.refreshPeriod();
+    });
+
+    expect(refreshed).toEqual({ period: initialPeriod, changed: false });
+    expect(refreshed?.period).toBe(initialPeriod);
   });
 });

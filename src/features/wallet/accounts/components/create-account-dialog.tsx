@@ -11,7 +11,7 @@ import {
   toCreateAccountPayload,
 } from "@/features/wallet/accounts/lib/account-form-mappers";
 import { useCreateAccount } from "@/features/wallet/accounts/mutations/use-create-account";
-import type { AccountFormValues } from "@/features/wallet/accounts/schemas/account-form-schema";
+import type { CreateAccountFormValues } from "@/features/wallet/accounts/schemas/account-form-schema";
 
 type CreateAccountDialogProps = {
   open: boolean;
@@ -23,7 +23,7 @@ export function CreateAccountDialog({ open, onClose, onCreated }: CreateAccountD
   const [submitError, setSubmitError] = useState<string | null>(null);
   const mutation = useCreateAccount();
 
-  async function handleSubmit(values: AccountFormValues) {
+  async function handleSubmit(values: CreateAccountFormValues) {
     setSubmitError(null);
     try {
       const account = await mutation.mutateAsync(toCreateAccountPayload(values));
@@ -38,6 +38,7 @@ export function CreateAccountDialog({ open, onClose, onCreated }: CreateAccountD
       busy={mutation.isPending}
       description="Defina os dados iniciais. O saldo inicial só pode ser informado na criação."
       descriptionId="create-account-description"
+      initialFocusSelector="#create-account-name"
       onClose={onClose}
       open={open}
       title="Nova conta"

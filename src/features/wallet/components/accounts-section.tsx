@@ -13,6 +13,7 @@ type AccountsSectionProps = {
   successMessage: string | null;
   onSelectAccount: (id: string) => void;
   onCreateAccount: () => void;
+  onAdjustAccount: (walletAccount: WalletAccount) => void;
   onEditAccount: (account: Account) => void;
 };
 
@@ -22,6 +23,7 @@ export function AccountsSection({
   successMessage,
   onSelectAccount,
   onCreateAccount,
+  onAdjustAccount,
   onEditAccount,
 }: AccountsSectionProps) {
   return (
@@ -59,7 +61,11 @@ export function AccountsSection({
               </li>
             ))}
           </ul>
-          <AccountDetails onEdit={onEditAccount} walletAccount={selectedAccount} />
+          <AccountDetails
+            onAdjust={onAdjustAccount}
+            onEdit={onEditAccount}
+            walletAccount={selectedAccount}
+          />
         </div>
       )}
     </section>
