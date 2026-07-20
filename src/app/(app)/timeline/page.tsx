@@ -1,16 +1,7 @@
-import { ListTree } from "lucide-react";
-
-import { ScreenPlaceholder } from "@/features/placeholders/screen-placeholder";
+import { TimelineScreen } from "@/features/timeline/timeline-screen";
 
 export const metadata = { title: "Timeline" };
 
 export default function TimelinePage() {
-  return (
-    <ScreenPlaceholder
-      description="Compromissos e movimentos financeiros em sequência cronológica."
-      eyebrow="Planejamento"
-      icon={ListTree}
-      title="Timeline"
-    />
-  );
+  return <TimelineScreen />;
 }

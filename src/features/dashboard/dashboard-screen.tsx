@@ -15,7 +15,7 @@ import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard
 import { formatDateTime } from "@/lib/format";
 
 export function DashboardScreen() {
-  const { data, isError, isFetching, isPending, refetch } = useDashboardOverview();
+  const { data, isError, isFetching, isPending, isRefetchError, refetch } = useDashboardOverview();
 
   const refreshDashboard = () => {
     if (!isFetching) {
@@ -56,6 +56,14 @@ export function DashboardScreen() {
       {data ? (
         <div className="dashboard-content">
           <p className="dashboard-as-of">Última consolidação: {formatDateTime(data.asOf)}</p>
+          {isRefetchError ? (
+            <div className="dashboard-refetch-alert" role="alert">
+              <span>Não foi possível atualizar. Os dados exibidos podem estar desatualizados.</span>
+              <button className="secondary-button" onClick={refreshDashboard} type="button">
+                Tentar novamente
+              </button>
+            </div>
+          ) : null}
           <BalanceSummary balance={data.balance} />
           <div className="dashboard-primary-grid">
             <DailySpendingCard dailySpending={data.dailySpending} />

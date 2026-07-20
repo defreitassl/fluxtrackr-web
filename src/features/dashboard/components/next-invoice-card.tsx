@@ -1,12 +1,17 @@
 import { CreditCard, ReceiptText } from "lucide-react";
 
-import type { DashboardOverviewNextInvoice } from "@/api/generated/client";
+import type {
+  CreditCardInvoiceStatus,
+  DashboardOverviewNextInvoice,
+} from "@/api/generated/client";
 import { formatCurrency, formatDate } from "@/lib/format";
 
-const invoiceStatusLabels: Record<string, string> = {
+const invoiceStatusLabels: Record<CreditCardInvoiceStatus, string> = {
   open: "Em aberto",
   closed: "Fechada",
+  paid: "Paga",
   overdue: "Vencida",
+  canceled: "Cancelada",
 };
 
 type NextInvoiceCardProps = {
@@ -45,7 +50,7 @@ export function NextInvoiceCard({ invoice }: NextInvoiceCardProps) {
       <strong className="invoice-card-amount">{formatCurrency(invoice.amount)}</strong>
       <div className="invoice-details">
         <span>Vence em {formatDate(invoice.dueDate)}</span>
-        <span>{invoiceStatusLabels[invoice.status] ?? invoice.status}</span>
+        <span>{invoiceStatusLabels[invoice.status]}</span>
         <span>{invoice.installmentsCount} parcelas</span>
       </div>
     </section>

@@ -1,7 +1,7 @@
 # FluxTrackr Web
 
-Frontend desktop do FluxTrackr. Inclui autenticação via BFF, App Shell e
-Dashboard somente de leitura, consolidado pela API.
+Frontend desktop do FluxTrackr. Inclui autenticação via BFF, App Shell,
+Dashboard e Timeline somente de leitura, consolidados pela API.
 
 ## Stack
 
@@ -62,6 +62,37 @@ API.
 Orval; TanStack Query usa chave `['dashboard-overview']`, sem polling.
 Valores financeiros vêm diretamente da API; frontend não recalcula saldo,
 orçamento, meta diária, previsão ou faturas.
+
+## Timeline
+
+`/timeline` usa somente `GET /financial-timeline`, pelo adapter em
+`src/features/timeline/api/`. A query principal inclui todos os filtros na
+chave:
+
+```ts
+["financial-timeline", { startDate, endDate, type, sourceType, includeCanceled }]
+```
+
+A tela abre no mês UTC atual, envia `startDate` e `endDate` UTC para a API e
+permite navegar mensalmente, atualizar manualmente e filtrar por tipo, origem
+e itens cancelados. O resumo e a ordem dos itens vêm diretamente da resposta;
+o frontend apenas agrupa visualmente por dia UTC e traduz enums.
+
+## Validação local integrada
+
+Com a API e as fixtures locais configuradas com credenciais não versionadas:
+
+```bash
+# API
+cd ../fluxtrackr-api
+npm run prisma:seed
+npm run prisma:seed:dashboard-dev
+PORT=3001 npm run start:dev
+
+# Web
+cd ../fluxtrackr-web
+npm run dev
+```
 
 ## Testes
 
