@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/features/timeline/queries/use-financial-timeline", () => ({
   timelineTypeOptions: [
@@ -15,6 +15,8 @@ vi.mock("@/features/timeline/queries/use-financial-timeline", () => ({
 
 import { useFinancialTimeline } from "@/features/timeline/queries/use-financial-timeline";
 import { TimelineScreen } from "@/features/timeline/timeline-screen";
+
+afterEach(cleanup);
 
 const timeline = {
   startDate: "2026-07-01T00:00:00.000Z",
@@ -75,5 +77,17 @@ describe("TimelineScreen", () => {
     render(<TimelineScreen />);
 
     expect(screen.getByRole("alert")).toHaveTextContent("Timeline indisponível");
+  });
+
+  it("keeps navigation and filters enabled while a background fetch is running", () => {
+    mockQuery({ isFetching: true });
+    render(<TimelineScreen />);
+
+    expect(screen.getByRole("button", { name: "Mês anterior" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Próximo mês" })).toBeEnabled();
+    expect(screen.getByLabelText("Tipo")).toBeEnabled();
+    expect(screen.getByLabelText("Origem")).toBeEnabled();
+    expect(screen.getByLabelText("Incluir cancelados")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Atualizar Timeline" })).toBeDisabled();
   });
 });

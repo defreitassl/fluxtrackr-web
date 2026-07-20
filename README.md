@@ -78,6 +78,27 @@ permite navegar mensalmente, atualizar manualmente e filtrar por tipo, origem
 e itens cancelados. O resumo e a ordem dos itens vêm diretamente da resposta;
 o frontend apenas agrupa visualmente por dia UTC e traduz enums.
 
+Os horários da Timeline são formatados em UTC e exibem o sufixo `UTC`, para
+deixar explícita a mesma regra usada nas fronteiras e no agrupamento financeiro.
+
+## Carteira
+
+`/wallet` é uma tela somente de leitura. Ela reutiliza o panorama de
+`GET /dashboard-overview` pela mesma query key `['dashboard-overview']` e
+compõe a consulta própria:
+
+```ts
+["wallet-overview", { year, month }]
+```
+
+`year` e `month` são obtidos em UTC. A tela usa `GET /accounts`, consulta
+`GET /accounts/:id/balance` em paralelo para cada conta retornada, além de
+`GET /credit-cards?isActive=true` e
+`GET /credit-card-invoices?year=&month=`. A API continua sendo a fonte de
+todos os saldos, disponível para gastar, limite configurado e valores de
+fatura: o frontend não soma, não recalcula limite e não implementa pagamentos
+ou qualquer CRUD neste recorte.
+
 ## Validação local integrada
 
 Com a API e as fixtures locais configuradas com credenciais não versionadas:

@@ -57,7 +57,6 @@ export function TimelineControls({
           <button
             aria-label="Mês anterior"
             className="icon-button"
-            disabled={isFetching}
             onClick={() => onMoveMonth(-1)}
             type="button"
           >
@@ -70,7 +69,6 @@ export function TimelineControls({
           <button
             aria-label="Próximo mês"
             className="icon-button"
-            disabled={isFetching}
             onClick={() => onMoveMonth(1)}
             type="button"
           >
@@ -78,7 +76,7 @@ export function TimelineControls({
           </button>
           <button
             className="secondary-button timeline-current-month-button"
-            disabled={isCurrentMonth || isFetching}
+            disabled={isCurrentMonth}
             onClick={onResetMonth}
             type="button"
           >
@@ -95,7 +93,6 @@ export function TimelineControls({
           <label>
             <span>Tipo</span>
             <select
-              disabled={isFetching}
               onChange={(event) =>
                 onChangeFilters({
                   ...filters,
@@ -113,7 +110,6 @@ export function TimelineControls({
           <label>
             <span>Origem</span>
             <select
-              disabled={isFetching}
               onChange={(event) =>
                 onChangeFilters({
                   ...filters,
@@ -131,7 +127,6 @@ export function TimelineControls({
           <label className="timeline-canceled-filter">
             <input
               checked={filters.includeCanceled ?? false}
-              disabled={isFetching}
               onChange={(event) =>
                 onChangeFilters({ ...filters, includeCanceled: event.target.checked })
               }

@@ -5,6 +5,7 @@ import {
   getUtcMonthRange,
   getUtcMonthStart,
   moveUtcMonth,
+  formatUtcTime,
 } from "@/features/timeline/lib/timeline-date-range";
 
 describe("timeline UTC date ranges", () => {
@@ -29,5 +30,9 @@ describe("timeline UTC date ranges", () => {
         new Date("2025-01-02T00:00:00.000Z"),
       ),
     ).toThrow("366 dias");
+  });
+
+  it("formats item times in UTC explicitly", () => {
+    expect(formatUtcTime("2026-07-20T23:30:00.000Z")).toBe("23:30 UTC");
   });
 });

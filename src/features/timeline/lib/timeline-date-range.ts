@@ -67,5 +67,5 @@ export function formatUtcDay(value: string) {
 }
 
 export function formatUtcTime(value: string) {
-  return timeFormatter.format(new Date(value));
+  return `${timeFormatter.format(new Date(value))} UTC`;
 }
