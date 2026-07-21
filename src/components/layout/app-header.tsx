@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Visão financeira", subtitle: "Início · dinheiro disponível e projeção" },
-  "/timeline": { title: "Timeline", subtitle: "Compromissos e projeções por data" },
+  "/timeline": { title: "Timeline", subtitle: "Seus eventos financeiros em ordem cronológica" },
   "/transactions": { title: "Transações", subtitle: "Lançamentos do período" },
   "/wallet": { title: "Carteira", subtitle: "Contas, cartões e saldos" },
   "/planning": { title: "Planejamento", subtitle: "Orçamentos por categoria" },

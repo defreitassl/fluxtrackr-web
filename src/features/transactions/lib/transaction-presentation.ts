@@ -1,4 +1,13 @@
-import type { Account, Category, TransactionSource } from "@/api/generated/client";
+import type { Account, Category, PaymentMethod, TransactionSource } from "@/api/generated/client";
+
+export const paymentMethodLabels: Record<PaymentMethod, string> = {
+  pix: "Pix",
+  debit: "Débito",
+  credit: "Crédito",
+  cash: "Dinheiro",
+  transfer: "Transferência",
+  boleto: "Boleto",
+};
 
 export function transactionCategoryLabel(categoryId: string | null | undefined, categoriesById: Map<string, Category>) {
   if (!categoryId) return "Sem categoria";
