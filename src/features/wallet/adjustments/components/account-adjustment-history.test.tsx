@@ -82,4 +82,13 @@ describe("AccountAdjustmentHistory", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(refetch).toHaveBeenCalled();
   });
+
+  it("keeps an empty state visible when a background refetch fails", () => {
+    const refetch = vi.fn();
+    mockHistory({ data: [], isError: true, isRefetchError: true, refetch });
+    render(<AccountAdjustmentHistory accountId="account-1" />);
+    expect(screen.getByText("Nenhum ajuste foi registrado nesta conta.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(refetch).toHaveBeenCalled();
+  });
 });

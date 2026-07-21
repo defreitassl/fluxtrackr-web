@@ -30,10 +30,6 @@ export function AccountAdjustmentHistory({ accountId }: AccountAdjustmentHistory
   }
 
   const adjustments = history.data ?? [];
-  if (adjustments.length === 0) {
-    return <p className="adjustment-history-empty">Nenhum ajuste foi registrado nesta conta.</p>;
-  }
-
   const visibleAdjustments = showAll ? adjustments : adjustments.slice(0, 5);
 
   return (
@@ -49,7 +45,10 @@ export function AccountAdjustmentHistory({ accountId }: AccountAdjustmentHistory
           </button>
         </div>
       ) : null}
-      <ul aria-label="Histórico de ajustes">
+      {adjustments.length === 0 ? (
+        <p className="adjustment-history-empty">Nenhum ajuste foi registrado nesta conta.</p>
+      ) : null}
+      {adjustments.length > 0 ? <ul aria-label="Histórico de ajustes">
         {visibleAdjustments.map((adjustment) => (
           <li key={adjustment.id}>
             <p>{formatUtcDateTime(adjustment.occurredAt)}</p>
@@ -70,7 +69,7 @@ export function AccountAdjustmentHistory({ accountId }: AccountAdjustmentHistory
             {adjustment.reason ? <p className="adjustment-history-reason">{adjustment.reason}</p> : null}
           </li>
         ))}
-      </ul>
+      </ul> : null}
       {adjustments.length > 5 ? (
         <button className="secondary-button" onClick={() => setShowAll((current) => !current)} type="button">
           {showAll ? "Mostrar menos" : "Mostrar todos"}

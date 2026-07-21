@@ -81,6 +81,36 @@ o frontend apenas agrupa visualmente por dia UTC e traduz enums.
 Os horários da Timeline são formatados em UTC e exibem o sufixo `UTC`, para
 deixar explícita a mesma regra usada nas fronteiras e no agrupamento financeiro.
 
+## Categorias
+
+`/categories` usa exclusivamente o cliente Orval para listar, criar, editar e
+arquivar categorias. A consulta aceita status (ativas, arquivadas ou todas) e
+tipo; `includeArchived=true` preserva o padrão histórico de listar somente
+ativas quando nenhum filtro é informado. Arquivar por `DELETE /categories/:id`
+preserva o histórico e arquiva os orçamentos ativos vinculados no backend.
+
+Não há atualização otimista. Após escrita, a tela invalida `['categories']`,
+atualizando os seletores de Transações sem recalcular dados financeiros.
+
+## Transações
+
+`/transactions` lista a resposta completa de `GET /transactions`, sem paginação
+ou infinite scroll artificiais. Os filtros disponíveis são tipo, período UTC,
+categoria, conta e método de pagamento. As datas de filtro são limites de dias
+UTC; no formulário, `datetime-local` representa o horário local informado pelo
+usuário e é convertido para ISO antes da API. A listagem explicita o horário em
+UTC, evitando uma mudança implícita de dia na apresentação.
+
+Criação usa `source: 'app'`; edição nunca altera a origem. Categorias e contas
+arquivadas não aparecem em novos seletores, mas uma categoria histórica é
+mantida ao editar outros campos. A API bloqueia categorias arquivadas ou
+incompatíveis com o tipo da transação em novas classificações.
+
+As mutations não são otimistas e invalidam `['transactions']`,
+`['wallet-overview']`, `['dashboard-overview']` e `['financial-timeline']`.
+Exclusão é física, requer confirmação explícita e deixa os cálculos financeiros
+para a API.
+
 ## Carteira
 
 `/wallet` reutiliza o panorama de `GET /dashboard-overview` pela mesma query

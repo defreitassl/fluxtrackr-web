@@ -55,4 +55,13 @@ describe("AccountTransferHistory", () => {
     rerender(<AccountTransferHistory accountId="source" accounts={accounts} key="other" />);
     expect(screen.getByText("Conta arquivada ou indisponível")).toBeInTheDocument();
   });
+
+  it("keeps an empty state visible when a background refetch fails", () => {
+    const refetch = vi.fn();
+    mockHistory({ data: [], isError: true, isRefetchError: true, refetch });
+    render(<AccountTransferHistory accountId="source" accounts={accounts} />);
+    expect(screen.getByText("Nenhuma transferência foi registrada nesta conta.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(refetch).toHaveBeenCalled();
+  });
 });

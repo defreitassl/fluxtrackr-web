@@ -31,10 +31,6 @@ export function AccountTransferHistory({ accountId, accounts }: AccountTransferH
   }
 
   const transfers = history.data ?? [];
-  if (transfers.length === 0) {
-    return <p className="adjustment-history-empty">Nenhuma transferência foi registrada nesta conta.</p>;
-  }
-
   const visibleTransfers = showAll ? transfers : transfers.slice(0, 5);
 
   return (
@@ -46,7 +42,10 @@ export function AccountTransferHistory({ accountId, accounts }: AccountTransferH
           <button className="secondary-button" onClick={() => void history.refetch()} type="button">Tentar novamente</button>
         </div>
       ) : null}
-      <ul aria-label="Histórico de transferências">
+      {transfers.length === 0 ? (
+        <p className="adjustment-history-empty">Nenhuma transferência foi registrada nesta conta.</p>
+      ) : null}
+      {transfers.length > 0 ? <ul aria-label="Histórico de transferências">
         {visibleTransfers.map((transfer) => {
           const direction = getTransferDirection(transfer, accountId);
           const oppositeAccount = getOppositeTransferAccount(transfer, accountId, accounts);
@@ -64,7 +63,7 @@ export function AccountTransferHistory({ accountId, accounts }: AccountTransferH
             </li>
           );
         })}
-      </ul>
+      </ul> : null}
       {transfers.length > 5 ? (
         <button className="secondary-button" onClick={() => setShowAll((current) => !current)} type="button">
           {showAll ? "Mostrar menos" : "Mostrar todas"}

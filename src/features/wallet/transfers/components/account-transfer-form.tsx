@@ -55,21 +55,22 @@ export function AccountTransferForm({
       </div>
       <label className="account-field" htmlFor="account-transfer-source">
         <span>Conta de origem</span>
-        <select disabled={isSubmitting} id="account-transfer-source" {...sourceRegistration}>
+        <select aria-describedby={errors.sourceAccountId ? "account-transfer-source-error" : undefined} aria-invalid={errors.sourceAccountId ? true : undefined} disabled={isSubmitting} id="account-transfer-source" {...sourceRegistration}>
           {accounts.map(({ account }) => <option key={account.id} value={account.id}>{account.name}</option>)}
         </select>
+        {errors.sourceAccountId ? <small className="field-error" id="account-transfer-source-error" role="alert">{errors.sourceAccountId.message}</small> : null}
       </label>
       <label className="account-field" htmlFor="account-transfer-destination">
         <span>Conta de destino</span>
-        <select aria-invalid={errors.destinationAccountId ? true : undefined} disabled={isSubmitting} id="account-transfer-destination" {...register("destinationAccountId")}>
+        <select aria-describedby={errors.destinationAccountId ? "account-transfer-destination-error" : undefined} aria-invalid={errors.destinationAccountId ? true : undefined} disabled={isSubmitting} id="account-transfer-destination" {...register("destinationAccountId")}>
           {destinationAccounts.map(({ account }) => <option key={account.id} value={account.id}>{account.name}</option>)}
         </select>
-        {errors.destinationAccountId ? <small className="field-error" role="alert">{errors.destinationAccountId.message}</small> : null}
+        {errors.destinationAccountId ? <small className="field-error" id="account-transfer-destination-error" role="alert">{errors.destinationAccountId.message}</small> : null}
       </label>
       <label className="account-field" htmlFor="account-transfer-amount">
         <span>Valor</span>
-        <input aria-invalid={errors.amount ? true : undefined} autoComplete="off" data-dialog-initial-focus disabled={isSubmitting} id="account-transfer-amount" inputMode="decimal" placeholder="Ex.: 250,00" type="text" {...register("amount")} />
-        {errors.amount ? <small className="field-error" role="alert">{errors.amount.message}</small> : null}
+        <input aria-describedby={errors.amount ? "account-transfer-amount-error" : undefined} aria-invalid={errors.amount ? true : undefined} autoComplete="off" data-dialog-initial-focus disabled={isSubmitting} id="account-transfer-amount" inputMode="decimal" placeholder="Ex.: 250,00" type="text" {...register("amount")} />
+        {errors.amount ? <small className="field-error" id="account-transfer-amount-error" role="alert">{errors.amount.message}</small> : null}
       </label>
       <label className="account-field" htmlFor="account-transfer-description">
         <span>Descrição (opcional)</span>

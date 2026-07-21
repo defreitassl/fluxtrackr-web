@@ -1728,6 +1728,11 @@ export type PaymentMethodQueryParameter = PaymentMethod;
 
 export type IsActiveQueryParameter = boolean;
 
+/**
+ * Inclui categorias ativas e arquivadas quando `isActive` não for informado.
+ */
+export type IncludeArchivedQueryParameter = boolean;
+
 export type StartDateTimeQueryParameter = DateTime;
 
 export type EndDateTimeQueryParameter = DateTime;
@@ -1755,6 +1760,10 @@ paymentMethod?: PaymentMethodQueryParameter;
 
 export type ListCategoriesParams = {
 isActive?: IsActiveQueryParameter;
+/**
+ * Inclui categorias ativas e arquivadas quando `isActive` não for informado.
+ */
+includeArchived?: IncludeArchivedQueryParameter;
 type?: CategoryType;
 };
 
@@ -3201,7 +3210,7 @@ export const getCreateAccountTransferUrl = () => {
 }
 
 /**
- * @summary Cria uma transferência histórica entre duas contas ativas
+ * @summary Cria uma transferência entre duas contas ativas no horário atual da API
  */
 export const createAccountTransfer = async (createAccountTransferRequest: CreateAccountTransferRequest, options?: RequestInit): Promise<createAccountTransferResponse> => {
 
