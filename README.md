@@ -130,10 +130,10 @@ método, origem e datas em UTC.
 
 O resumo mensal usa `GET /monthly-summary` para o mês UTC selecionado (ou o mês
 UTC atual sem filtro de data) e exibe receitas lançadas, despesas lançadas e
-saldo disponível exatamente como retornados. Quando as datas de início e fim
-abrangem mais de um mês UTC, o Web não consulta nem exibe o resumo e informa
-que ele está disponível apenas para períodos dentro do mesmo mês. A lista nunca
-é somada no cliente para produzir esse resumo.
+saldo disponível exatamente como retornados. O Web só consulta e exibe esse
+resumo quando não há filtro de data ou quando início e fim delimitam o mesmo mês
+UTC; intervalos abertos ou que abrangem vários meses mostram uma orientação. A
+lista nunca é somada no cliente para produzir esse resumo.
 
 **Nova movimentação** é somente um seletor de fluxo: encaminha para o
 formulário de receita/despesa, transferência entre contas ou compra no cartão.

@@ -241,6 +241,32 @@ describe("TransactionsScreen", () => {
     expect(screen.queryByRole("heading", { name: /julho de 2026/i })).not.toBeInTheDocument();
   });
 
+  it("hides and does not request the monthly summary with only a start date", async () => {
+    mockScreenQueries();
+    render(<TransactionsScreen />, { wrapper });
+
+    fireEvent.change(screen.getByLabelText("Início (UTC)"), { target: { value: "2026-07-01" } });
+
+    await waitFor(() => expect(vi.mocked(useTransactionMonthlySummary).mock.calls.at(-1)).toEqual([
+      { year: 2026, month: 7 },
+      { enabled: false },
+    ]));
+    expect(screen.getByText("O resumo mensal está disponível para períodos dentro do mesmo mês.")).toBeInTheDocument();
+  });
+
+  it("hides and does not request the monthly summary with only an end date", async () => {
+    mockScreenQueries();
+    render(<TransactionsScreen />, { wrapper });
+
+    fireEvent.change(screen.getByLabelText("Fim (UTC)"), { target: { value: "2026-07-31" } });
+
+    await waitFor(() => expect(vi.mocked(useTransactionMonthlySummary).mock.calls.at(-1)).toEqual([
+      { year: 2026, month: 7 },
+      { enabled: false },
+    ]));
+    expect(screen.getByText("O resumo mensal está disponível para períodos dentro do mesmo mês.")).toBeInTheDocument();
+  });
+
   it("retries transactions and the monthly summary while preserving data after a refetch error", () => {
     const { summaryRefetch, transactionsRefetch } = mockScreenQueries({
       transactionData: [makeTransaction()],
