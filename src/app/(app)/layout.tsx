@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/layout/app-shell";
@@ -10,5 +11,11 @@ export default async function AuthenticatedLayout({ children }: React.PropsWithC
     redirect("/login");
   }
 
-  return <AppShell email={session.email}>{children}</AppShell>;
+  const initialCollapsed = (await cookies()).get("fluxtrackr_sidebar")?.value === "collapsed";
+
+  return (
+    <AppShell email={session.email} initialCollapsed={initialCollapsed}>
+      {children}
+    </AppShell>
+  );
 }

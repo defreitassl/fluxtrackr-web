@@ -1108,10 +1108,18 @@ export interface BudgetSummary {
   exceededCount: number;
 }
 
+export type DashboardOverviewBalanceCommittedBreakdown = {
+  creditCardInvoices: Money;
+  fixedExpenses: Money;
+  financialEvents: Money;
+  subscriptions: Money;
+};
+
 export type DashboardOverviewBalance = {
   total: Money;
   committed: Money;
   availableToSpend: Money;
+  committedBreakdown: DashboardOverviewBalanceCommittedBreakdown;
 };
 
 export type DashboardOverviewDailySpendingStatus = typeof DashboardOverviewDailySpendingStatus[keyof typeof DashboardOverviewDailySpendingStatus];

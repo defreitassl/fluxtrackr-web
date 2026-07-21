@@ -1,18 +1,20 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import { useMemo } from "react";
 
 import { ErrorState } from "@/components/ui/error-state";
-import { BalanceSummary } from "@/features/dashboard/components/balance-summary";
-import { BudgetSummaryCard } from "@/features/dashboard/components/budget-summary-card";
-import { DailySpendingCard } from "@/features/dashboard/components/daily-spending-card";
+import { BalanceEvolutionCard } from "@/features/dashboard/components/balance-evolution-card";
 import { DashboardSkeleton } from "@/features/dashboard/components/dashboard-skeleton";
-import { ForecastCard } from "@/features/dashboard/components/forecast-card";
+import { FinanceCalendarCard } from "@/features/dashboard/components/finance-calendar-card";
+import { HeroBalance } from "@/features/dashboard/components/hero-balance";
+import { KpiTiles } from "@/features/dashboard/components/kpi-tiles";
+import { MovementsCard } from "@/features/dashboard/components/movements-card";
 import { NextInvoiceCard } from "@/features/dashboard/components/next-invoice-card";
-import { RecentMovements } from "@/features/dashboard/components/recent-movements";
-import { UpcomingCommitments } from "@/features/dashboard/components/upcoming-commitments";
+import { UpcomingCommitmentsCard } from "@/features/dashboard/components/upcoming-commitments-card";
 import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
-import { formatDateTime } from "@/lib/format";
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const HISTORY_DAYS = 30;
 
 export function DashboardScreen() {
   const { data, isError, isFetching, isPending, isRefetchError, refetch } = useDashboardOverview();
@@ -23,26 +25,25 @@ export function DashboardScreen() {
     }
   };
 
-  return (
-    <section className="dashboard-screen" aria-labelledby="dashboard-title">
-      <header className="dashboard-page-header">
-        <div>
-          <p className="page-eyebrow">Visão geral</p>
-          <h1 id="dashboard-title">Dashboard</h1>
-          <p>Acompanhe valores consolidados, próximos compromissos e cenário dos próximos dias.</p>
-        </div>
-        <button
-          aria-label="Atualizar Dashboard"
-          className="secondary-button dashboard-refresh-button"
-          disabled={isFetching}
-          onClick={refreshDashboard}
-          type="button"
-        >
-          <RefreshCw aria-hidden="true" className={isFetching ? "is-spinning" : undefined} size={16} />
-          {isFetching && !isPending ? "Atualizando…" : "Atualizar"}
-        </button>
-      </header>
+  const today = useMemo(() => (data ? new Date(data.asOf) : new Date()), [data]);
 
+  const windows = useMemo(() => {
+    const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+    const monthEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1) - 1);
+    const dayEnd = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + 1) - 1,
+    );
+    return {
+      month: { startDate: monthStart.toISOString(), endDate: monthEnd.toISOString() },
+      history: {
+        startDate: new Date(dayEnd.getTime() - HISTORY_DAYS * DAY_IN_MS + 1).toISOString(),
+        endDate: dayEnd.toISOString(),
+      },
+    };
+  }, [today]);
+
+  return (
+    <section className="dashboard-screen" aria-label="Visão financeira">
       {isPending ? <DashboardSkeleton /> : null}
 
       {isError && !data ? (
@@ -54,8 +55,7 @@ export function DashboardScreen() {
       ) : null}
 
       {data ? (
-        <div className="dashboard-content">
-          <p className="dashboard-as-of">Última consolidação: {formatDateTime(data.asOf)}</p>
+        <>
           {isRefetchError ? (
             <div className="dashboard-refetch-alert" role="alert">
               <span>Não foi possível atualizar. Os dados exibidos podem estar desatualizados.</span>
@@ -64,18 +64,25 @@ export function DashboardScreen() {
               </button>
             </div>
           ) : null}
-          <BalanceSummary balance={data.balance} />
-          <div className="dashboard-primary-grid">
-            <DailySpendingCard dailySpending={data.dailySpending} />
+
+          <div className="dx-layout">
+            <div className="dx-column">
+              <HeroBalance balance={data.balance} />
+              <KpiTiles overview={data} />
+              <BalanceEvolutionCard
+                currentBalance={Number(data.balance.total)}
+                historyWindow={windows.history}
+                today={today}
+              />
+              <MovementsCard monthWindow={windows.month} />
+            </div>
+            <div className="dx-side">
+              <FinanceCalendarCard today={today} />
+              <NextInvoiceCard invoice={data.nextInvoice} />
+              <UpcomingCommitmentsCard commitments={data.upcomingCommitments} />
+            </div>
           </div>
-          <div className="dashboard-secondary-grid">
-            <ForecastCard forecast={data.forecast30Days} />
-            <BudgetSummaryCard budgetSummary={data.budgetSummary} />
-            <NextInvoiceCard invoice={data.nextInvoice} />
-          </div>
-          <UpcomingCommitments commitments={data.upcomingCommitments} />
-          <RecentMovements movements={data.latestMovements} />
-        </div>
+        </>
       ) : null}
     </section>
   );

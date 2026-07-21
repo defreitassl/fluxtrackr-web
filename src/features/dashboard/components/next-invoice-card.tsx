@@ -1,48 +1,75 @@
-import { CreditCard, ReceiptText } from "lucide-react";
+"use client";
+
+import Link from "next/link";
 
 import type { DashboardOverviewNextInvoice } from "@/api/generated/client";
-import { getInvoiceStatusLabel } from "@/lib/financial-presentation";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { useCreditCards } from "@/features/dashboard/queries/use-credit-cards";
+import { formatCurrency } from "@/lib/format";
+
+const dueFormatter = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" });
+
+function cardMonogram(name: string) {
+  const words = name.split(" ").filter(Boolean);
+  if (words.length > 1) return `${words[0][0]}${words[1][0]}`.toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
 
 type NextInvoiceCardProps = {
   invoice: DashboardOverviewNextInvoice;
 };
 
 export function NextInvoiceCard({ invoice }: NextInvoiceCardProps) {
+  const { data: creditCards } = useCreditCards({ enabled: invoice !== null });
+
   if (!invoice) {
     return (
-      <section className="dashboard-card next-invoice-card invoice-empty" aria-labelledby="invoice-title">
-        <div className="card-heading">
-          <div>
-            <p className="card-kicker">Cartões</p>
-            <h2 id="invoice-title">Próxima fatura</h2>
-          </div>
-          <span className="card-icon" aria-hidden="true"><CreditCard size={18} /></span>
+      <section className="dx-panel dx-side-card">
+        <div className="dx-side-head">
+          <h2>Próxima fatura</h2>
         </div>
-        <div className="dashboard-inline-empty">
-          <ReceiptText aria-hidden="true" size={18} />
-          <p>Nenhuma próxima fatura com valor pendente.</p>
-        </div>
+        <p className="dx-empty">Nenhuma fatura em aberto no momento.</p>
       </section>
     );
   }
 
+  const creditCard = creditCards?.find((card) => card.id === invoice.creditCardId);
+  const limit = creditCard ? Number(creditCard.limitAmount) : null;
+  const amount = Number(invoice.amount);
+  const usage = limit && limit > 0 ? Math.min(100, (amount / limit) * 100) : null;
+
   return (
-    <section className="dashboard-card next-invoice-card" aria-labelledby="invoice-title">
-      <div className="card-heading">
-        <div>
-          <p className="card-kicker">Cartões</p>
-          <h2 id="invoice-title">Próxima fatura</h2>
+    <section className="dx-panel dx-side-card">
+      <div className="dx-side-head">
+        <h2>Próxima fatura</h2>
+        <Link className="dx-panel-link" href="/wallet">
+          Detalhes
+        </Link>
+      </div>
+
+      <div className="dx-invoice-row">
+        <div className="dx-invoice-logo" aria-hidden="true">
+          {cardMonogram(invoice.creditCardName)}
         </div>
-        <span className="card-icon" aria-hidden="true"><CreditCard size={18} /></span>
+        <div>
+          <strong>{invoice.creditCardName}</strong>
+          <span className="dx-invoice-due">vence em {dueFormatter.format(new Date(invoice.dueDate))}</span>
+        </div>
+        <strong className="dx-invoice-amount">{formatCurrency(invoice.amount)}</strong>
       </div>
-      <p className="invoice-card-name">{invoice.creditCardName}</p>
-      <strong className="invoice-card-amount">{formatCurrency(invoice.amount)}</strong>
-      <div className="invoice-details">
-        <span>Vence em {formatDate(invoice.dueDate)}</span>
-        <span>{getInvoiceStatusLabel(invoice.status)}</span>
-        <span>{invoice.installmentsCount} parcelas</span>
-      </div>
+
+      {usage !== null ? (
+        <>
+          <div className="dx-progress" aria-hidden="true">
+            <i style={{ width: `${usage}%` }} />
+          </div>
+          <div className="dx-progress-meta">
+            <span>
+              {formatCurrency(amount)} de {formatCurrency(limit ?? 0)}
+            </span>
+            {creditCard?.closingDay ? <span>Fecha dia {creditCard.closingDay}</span> : null}
+          </div>
+        </>
+      ) : null}
     </section>
   );
 }

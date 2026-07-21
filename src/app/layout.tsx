@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 
 import { Providers } from "@/providers/providers";
 import type { Theme } from "@/providers/theme-provider";
 import "@/styles/globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -21,7 +32,12 @@ export default async function RootLayout({ children }: Readonly<React.PropsWithC
   const initialTheme = getInitialTheme((await cookies()).get("fluxtrackr_theme")?.value);
 
   return (
-    <html data-theme={initialTheme === "system" ? undefined : initialTheme} lang="pt-BR" suppressHydrationWarning>
+    <html
+      className={`${inter.variable} ${jetBrainsMono.variable}`}
+      data-theme={initialTheme === "system" ? undefined : initialTheme}
+      lang="pt-BR"
+      suppressHydrationWarning
+    >
       <body>
         <Providers initialTheme={initialTheme}>{children}</Providers>
       </body>
