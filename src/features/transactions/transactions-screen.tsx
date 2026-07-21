@@ -51,6 +51,10 @@ function getSummaryPeriod(startDate: string, endDate: string) {
   return { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 };
 }
 
+function isMultiMonthRange(startDate: string, endDate: string) {
+  return Boolean(startDate && endDate && startDate.slice(0, 7) !== endDate.slice(0, 7));
+}
+
 function formatSummaryPeriod({ year, month }: { year: number; month: number }) {
   return new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(year, month - 1, 1)));
 }
@@ -67,21 +71,29 @@ export function TransactionsScreen() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const params = toQueryParams(filters);
   const invalidRange = params === null;
+  const hasMultiMonthRange = isMultiMonthRange(filters.startDate, filters.endDate);
+  const canShowMonthlySummary = !invalidRange && !hasMultiMonthRange;
   const transactions = useTransactions(params, { enabled: !invalidRange });
   const summaryPeriod = useMemo(() => getSummaryPeriod(filters.startDate, filters.endDate), [filters.endDate, filters.startDate]);
-  const monthlySummary = useTransactionMonthlySummary(summaryPeriod);
+  const monthlySummary = useTransactionMonthlySummary(summaryPeriod, { enabled: canShowMonthlySummary });
   const categories = useQuery<Category[], ApiError>({ queryKey: ["categories", { includeArchived: true, purpose: "transactions" }], queryFn: listTransactionCategoriesData, retry: false });
   const accounts = useQuery<Account[], ApiError>({ queryKey: ["transaction-accounts"], queryFn: listTransactionAccountsData, retry: false });
   const categoryById = useMemo(() => new Map((categories.data ?? []).map((item) => [item.id, item])), [categories.data]);
   const accountById = useMemo(() => new Map((accounts.data ?? []).map((item) => [item.id, item])), [accounts.data]);
   const activeAccounts = (accounts.data ?? []).filter((account) => account.isActive);
-  const refresh = () => { if (!transactions.isFetching && !monthlySummary.isFetching && !invalidRange) void Promise.all([transactions.refetch({ cancelRefetch: false }), monthlySummary.refetch({ cancelRefetch: false })]); };
+  const refresh = () => {
+    if (!transactions.isFetching && !monthlySummary.isFetching && !invalidRange) {
+      const refetches: Promise<unknown>[] = [transactions.refetch({ cancelRefetch: false })];
+      if (canShowMonthlySummary) refetches.push(monthlySummary.refetch({ cancelRefetch: false }));
+      void Promise.all(refetches);
+    }
+  };
   const hasFilters = Object.values(filters).some(Boolean) && filters.type !== "all" ? true : Boolean(filters.startDate || filters.endDate || filters.categoryId || filters.accountId || filters.paymentMethod);
 
   return <section className="resource-screen" aria-labelledby="transactions-title">
     <div className="resource-heading-row"><PageHeader eyebrow="Organização" title="Transações" titleId="transactions-title" description="Registre movimentações realizadas; saldos, resumos e projeções são calculados pela API." /><div className="resource-heading-actions"><button className="secondary-button" disabled={transactions.isFetching || monthlySummary.isFetching || invalidRange} onClick={refresh} type="button"><RefreshCw aria-hidden="true" className={transactions.isFetching || monthlySummary.isFetching ? "is-spinning" : undefined} size={16} /> Atualizar</button><button className="primary-button" onClick={() => { setFeedback(null); setIsNewMovementOpen(true); }} type="button"><Plus aria-hidden="true" size={16} /> Nova movimentação</button></div></div>
     <TransactionFiltersForm accounts={accounts.data ?? []} categories={categories.data ?? []} filters={filters} invalidRange={invalidRange} onChange={setFilters} />
-    <TransactionPeriodSummary isError={monthlySummary.isError} isLoading={monthlySummary.isFetching} periodLabel={formatSummaryPeriod(summaryPeriod)} summary={monthlySummary.data} />
+    {canShowMonthlySummary ? <TransactionPeriodSummary isError={monthlySummary.isError} isLoading={monthlySummary.isFetching} periodLabel={formatSummaryPeriod(summaryPeriod)} summary={monthlySummary.data} /> : <p className="transaction-summary-unavailable" role="status">O resumo mensal está disponível para períodos dentro do mesmo mês.</p>}
     {feedback ? <p className="mutation-feedback" role="status">{feedback}</p> : null}
     {invalidRange ? <div className="resource-refetch-alert" id="transactions-range-error" role="alert">A data inicial deve ser anterior ou igual à data final.</div> : null}
     {transactions.isPending && !transactions.data ? <TransactionSkeleton /> : null}

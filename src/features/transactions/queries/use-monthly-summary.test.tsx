@@ -38,4 +38,18 @@ describe("useTransactionMonthlySummary", () => {
     ]);
     expect(getTransactionMonthlySummaryData).toHaveBeenCalledWith(2026, 8);
   });
+
+  it("does not request a monthly summary when the screen disables it", () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: PropsWithChildren) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(
+      () => useTransactionMonthlySummary({ year: 2026, month: 8 }, { enabled: false }),
+      { wrapper },
+    );
+
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(getTransactionMonthlySummaryData).not.toHaveBeenCalled();
+  });
 });

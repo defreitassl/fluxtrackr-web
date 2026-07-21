@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, type FieldError } from "react-hook-form";
 
 import type { Category, CreditCardPurchase } from "@/api/generated/client";
@@ -26,12 +26,14 @@ import { ApiError } from "@/lib/http";
  * unificada de Transações. Ele próprio carrega os cartões e categorias ativos.
  */
 type CreateCreditCardPurchaseDialogProps = {
+  initialCreditCardId?: string;
   onClose: () => void;
   onCreated: (purchase: CreditCardPurchase) => void;
   open: boolean;
 };
 
 export function CreateCreditCardPurchaseDialog({
+  initialCreditCardId,
   onClose,
   onCreated,
   open,
@@ -50,7 +52,10 @@ export function CreateCreditCardPurchaseDialog({
     retry: false,
   });
   const mutation = useCreateCreditCardPurchase();
-  const defaultValues = useMemo(() => defaultCreditCardPurchaseFormValues(), []);
+  const defaultValues = useMemo(
+    () => defaultCreditCardPurchaseFormValues(initialCreditCardId),
+    [initialCreditCardId],
+  );
   const expenseCategories = useMemo(
     () => (categories.data ?? []).filter((category) => category.type === "expense" || category.type === "both"),
     [categories.data],
@@ -92,6 +97,7 @@ export function CreateCreditCardPurchaseDialog({
         onCancel={onClose}
         onSubmit={handleSubmit}
         optionsReady={optionsReady}
+        open={open}
         submitError={submitError}
       />
     </Dialog>
@@ -107,6 +113,7 @@ type CreditCardPurchaseFormProps = {
   onCancel: () => void;
   onSubmit: (values: CreditCardPurchaseFormValues) => void | Promise<void>;
   optionsReady: boolean;
+  open: boolean;
   submitError: string | null;
 };
 
@@ -119,16 +126,22 @@ function CreditCardPurchaseForm({
   onCancel,
   onSubmit,
   optionsReady,
+  open,
   submitError,
 }: CreditCardPurchaseFormProps) {
   const {
     formState: { errors },
     handleSubmit,
     register,
+    reset,
   } = useForm<CreditCardPurchaseFormValues>({
     resolver: zodResolver(creditCardPurchaseFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (open && optionsReady) reset(defaultValues);
+  }, [defaultValues, open, optionsReady, reset]);
 
   const disabled = isSubmitting || !optionsReady;
   const fieldId = (name: keyof CreditCardPurchaseFormValues) => `create-credit-card-purchase-${name}`;

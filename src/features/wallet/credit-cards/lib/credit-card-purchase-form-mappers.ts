@@ -11,9 +11,9 @@ export function nowCreditCardPurchaseDateTimeLocal() {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function defaultCreditCardPurchaseFormValues(): CreditCardPurchaseFormValues {
+export function defaultCreditCardPurchaseFormValues(initialCreditCardId = ""): CreditCardPurchaseFormValues {
   return {
-    creditCardId: "",
+    creditCardId: initialCreditCardId,
     categoryId: "",
     description: "",
     totalAmount: "",

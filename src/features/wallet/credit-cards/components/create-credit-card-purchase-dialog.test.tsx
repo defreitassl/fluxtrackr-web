@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { PropsWithChildren } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -17,10 +17,11 @@ import { CreateCreditCardPurchaseDialog } from "@/features/wallet/credit-cards/c
 import { useCreateCreditCardPurchase } from "@/features/wallet/credit-cards/mutations/use-create-credit-card-purchase";
 
 afterEach(() => {
+  cleanup();
   vi.resetAllMocks();
 });
 
-function renderDialog() {
+function renderDialog(initialCreditCardId?: string) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: PropsWithChildren) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -28,12 +29,27 @@ function renderDialog() {
   const onCreated = vi.fn();
   const onClose = vi.fn();
 
-  render(<CreateCreditCardPurchaseDialog onClose={onClose} onCreated={onCreated} open />, { wrapper });
+  render(<CreateCreditCardPurchaseDialog initialCreditCardId={initialCreditCardId} onClose={onClose} onCreated={onCreated} open />, { wrapper });
 
   return { onClose, onCreated };
 }
 
 describe("CreateCreditCardPurchaseDialog", () => {
+  it("starts with the optionally supplied card selected", async () => {
+    vi.mocked(listActiveCreditCardsData).mockResolvedValue([
+      { id: "card-1", name: "Cartão Flux", lastFourDigits: "4242" },
+      { id: "card-2", name: "Cartão Reserva", lastFourDigits: "1111" },
+    ] as never);
+    vi.mocked(listCategoriesData).mockResolvedValue([]);
+    vi.mocked(useCreateCreditCardPurchase).mockReturnValue({ mutateAsync: vi.fn(), isPending: false } as never);
+    renderDialog("card-2");
+
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: /Cartão Reserva/ })).toBeInTheDocument();
+      expect(screen.getByLabelText("Cartão")).toHaveValue("card-2");
+    });
+  });
+
   it("is reusable and submits only API-supported purchase fields", async () => {
     vi.mocked(listActiveCreditCardsData).mockResolvedValue([
       { id: "card-1", name: "Cartão Flux", lastFourDigits: "4242" },

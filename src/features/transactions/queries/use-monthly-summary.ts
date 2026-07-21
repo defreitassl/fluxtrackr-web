@@ -15,8 +15,12 @@ export function transactionMonthlySummaryQueryKey({ year, month }: TransactionSu
   return ["monthly-summary", { year, month }] as const;
 }
 
-export function useTransactionMonthlySummary(period: TransactionSummaryPeriod) {
+export function useTransactionMonthlySummary(
+  period: TransactionSummaryPeriod,
+  { enabled = true }: { enabled?: boolean } = {},
+) {
   return useQuery<MonthlySummary, ApiError>({
+    enabled,
     queryKey: transactionMonthlySummaryQueryKey(period),
     queryFn: () => getTransactionMonthlySummaryData(period.year, period.month),
     retry: false,

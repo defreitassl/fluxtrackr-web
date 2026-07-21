@@ -217,12 +217,28 @@ describe("TransactionsScreen", () => {
       },
       { enabled: true },
     ]));
-    expect(vi.mocked(useTransactionMonthlySummary).mock.calls.at(-1)).toEqual([{ year: 2026, month: 8 }]);
+    expect(vi.mocked(useTransactionMonthlySummary).mock.calls.at(-1)).toEqual([{ year: 2026, month: 8 }, { enabled: true }]);
     expect(screen.queryByRole("option", { name: "Arquivada" })).not.toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "Conta antiga" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Limpar filtros" }));
     await waitFor(() => expect(vi.mocked(useTransactions).mock.calls.at(-1)).toEqual([{}, { enabled: true }]));
+  });
+
+  it("hides and does not request the monthly summary for a range that spans multiple months", async () => {
+    mockScreenQueries();
+    render(<TransactionsScreen />, { wrapper });
+
+    fireEvent.change(screen.getByLabelText("Início (UTC)"), { target: { value: "2026-07-31" } });
+    fireEvent.change(screen.getByLabelText("Fim (UTC)"), { target: { value: "2026-08-01" } });
+
+    await waitFor(() => expect(vi.mocked(useTransactionMonthlySummary).mock.calls.at(-1)).toEqual([
+      { year: 2026, month: 7 },
+      { enabled: false },
+    ]));
+    expect(screen.getByRole("status")).toHaveTextContent("O resumo mensal está disponível para períodos dentro do mesmo mês.");
+    expect(screen.queryByText("Receitas lançadas")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /julho de 2026/i })).not.toBeInTheDocument();
   });
 
   it("retries transactions and the monthly summary while preserving data after a refetch error", () => {

@@ -10,6 +10,11 @@ vi.mock("@/features/wallet/adjustments/mutations/use-create-balance-adjustment",
 vi.mock("@/features/wallet/adjustments/queries/use-account-balance-adjustments", () => ({ useAccountBalanceAdjustments: vi.fn() }));
 vi.mock("@/features/wallet/transfers/mutations/use-create-account-transfer", () => ({ useCreateAccountTransfer: vi.fn() }));
 vi.mock("@/features/wallet/transfers/queries/use-account-transfers", () => ({ useAccountTransfers: vi.fn() }));
+vi.mock("@/features/wallet/credit-cards/components/create-credit-card-purchase-dialog", () => ({
+  CreateCreditCardPurchaseDialog: ({ initialCreditCardId }: { initialCreditCardId?: string }) => (
+    <div data-testid="credit-card-purchase-dialog">{initialCreditCardId ?? ""}</div>
+  ),
+}));
 
 import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
 import { useCurrentWalletPeriod } from "@/features/wallet/hooks/use-current-wallet-period";
@@ -167,6 +172,17 @@ describe("WalletScreen", () => {
     expect(screen.getByRole("button", { name: "Editar cartão" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Arquivar cartão" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pagar fatura integralmente" })).toBeInTheDocument();
+  });
+
+  it("starts a purchase with the selected card", () => {
+    mockWallet();
+    mockDashboard();
+    mockMutations();
+    render(<WalletScreen />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Nova compra" }));
+
+    expect(screen.getByTestId("credit-card-purchase-dialog")).toHaveTextContent("card-1");
   });
 
   it("keeps data visible and retries after a wallet refetch error", () => {

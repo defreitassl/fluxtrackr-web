@@ -372,6 +372,7 @@ export function WalletScreen() {
       ) : null}
       {isCreatePurchaseOpen ? (
         <CreateCreditCardPurchaseDialog
+          initialCreditCardId={cardSelection.selectedCard?.id}
           onClose={() => setIsCreatePurchaseOpen(false)}
           onCreated={handlePurchaseCreated}
           open

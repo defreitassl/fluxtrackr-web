@@ -408,6 +408,7 @@ a {
 .transaction-summary-skeleton { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .transaction-summary-skeleton span { min-height: 75px; border-radius: 12px; background: linear-gradient(90deg, var(--surface-muted), var(--surface), var(--surface-muted)); animation: skeleton-pulse 1.2s ease-in-out infinite; }
 .transaction-summary-error { margin: 0; padding: 11px 13px; border: 1px solid color-mix(in srgb, var(--danger) 38%, var(--line)); border-radius: var(--radius-sm); background: var(--danger-soft); color: var(--danger); font-size: 12px; font-weight: 650; }
+.transaction-summary-unavailable { margin: 0; padding: 13px 15px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-muted); color: var(--text-muted); font-size: 13px; font-weight: 650; }
 .new-movement-options { display: grid; gap: 9px; }
 .new-movement-option { display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 12px; width: 100%; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-raised); color: var(--text); text-align: left; transition: border-color 160ms ease, background 160ms ease, transform 160ms ease; }
 .new-movement-option:hover:not(:disabled) { border-color: color-mix(in srgb, var(--green) 45%, var(--line)); background: var(--green-soft); transform: translateY(-1px); }
