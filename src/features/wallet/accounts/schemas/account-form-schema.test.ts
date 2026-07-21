@@ -3,22 +3,24 @@ import { describe, expect, it } from "vitest";
 import {
   createAccountFormSchema,
   editAccountFormSchema,
+  type CreateAccountFormValues,
+  type EditAccountFormValues,
 } from "@/features/wallet/accounts/schemas/account-form-schema";
 
-const base = {
+const base: CreateAccountFormValues = {
   name: "Conta principal",
   bank: "",
   type: "checking" as const,
   color: "",
-  icon: "" as const,
+  icon: "",
   initialBalance: "1000",
 };
 
-function parseCreate(overrides: Partial<typeof base>) {
+function parseCreate(overrides: Partial<CreateAccountFormValues>) {
   return createAccountFormSchema.safeParse({ ...base, ...overrides });
 }
 
-function parseEdit(overrides: Partial<Omit<typeof base, "initialBalance">>) {
+function parseEdit(overrides: Partial<EditAccountFormValues>) {
   const metadata = {
     name: base.name,
     bank: base.bank,

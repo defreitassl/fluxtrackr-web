@@ -30,7 +30,7 @@ const groups = [
     label: "Organização",
     items: [
       { href: "/wallet", label: "Carteira", icon: Landmark },
-      { href: "/transactions", label: "Movimentações", icon: ReceiptText },
+      { href: "/transactions", label: "Transações", icon: ReceiptText },
       { href: "/categories", label: "Categorias", icon: FolderTree },
     ],
   },

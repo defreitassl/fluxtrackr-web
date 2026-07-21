@@ -14,6 +14,10 @@ type InvoiceDetailsProps = {
   cardInvoices: CreditCardInvoiceWithInstallments[];
   selectedInvoice: CreditCardInvoiceWithInstallments | undefined;
   onSelectInvoice: (id: string) => void;
+  onCreatePurchase: () => void;
+  onEditCard: (card: CreditCard) => void;
+  onArchiveCard: (card: CreditCard, currentInvoice: CreditCardInvoiceWithInstallments | undefined) => void;
+  onPayInvoice: (invoice: CreditCardInvoiceWithInstallments) => void;
 };
 
 export function InvoiceDetails({
@@ -21,6 +25,10 @@ export function InvoiceDetails({
   cardInvoices,
   selectedInvoice,
   onSelectInvoice,
+  onCreatePurchase,
+  onEditCard,
+  onArchiveCard,
+  onPayInvoice,
 }: InvoiceDetailsProps) {
   if (!selectedCard) {
     return <InlineEmpty icon={ReceiptText} message="Selecione um cartão para ver as faturas." />;
@@ -30,6 +38,22 @@ export function InvoiceDetails({
     <aside className="wallet-detail-panel wallet-invoice-panel" aria-labelledby="invoice-detail-title">
       <p className="page-eyebrow">Cartão selecionado</p>
       <h3 id="invoice-detail-title">{selectedCard.name}</h3>
+
+      <div className="wallet-detail-actions">
+        <button className="primary-button" onClick={onCreatePurchase} type="button">
+          Nova compra
+        </button>
+        <button className="secondary-button" onClick={() => onEditCard(selectedCard)} type="button">
+          Editar cartão
+        </button>
+        <button
+          className="danger-button"
+          onClick={() => onArchiveCard(selectedCard, selectedInvoice)}
+          type="button"
+        >
+          Arquivar cartão
+        </button>
+      </div>
 
       {cardInvoices.length === 0 || !selectedInvoice ? (
         <InlineEmpty
@@ -92,6 +116,14 @@ export function InvoiceDetails({
             ) : null}
           </dl>
 
+          {canPayInvoice(selectedInvoice) ? (
+            <div className="wallet-detail-actions">
+              <button className="primary-button" onClick={() => onPayInvoice(selectedInvoice)} type="button">
+                Pagar fatura integralmente
+              </button>
+            </div>
+          ) : null}
+
           <div className="wallet-installments">
             <div className="wallet-installments-heading">
               <h4>Parcelas</h4>
@@ -123,4 +155,8 @@ export function InvoiceDetails({
       )}
     </aside>
   );
+}
+
+function canPayInvoice(invoice: CreditCardInvoiceWithInstallments) {
+  return invoice.status === "open" || invoice.status === "closed" || invoice.status === "overdue";
 }

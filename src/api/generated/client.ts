@@ -331,7 +331,10 @@ export interface Transaction {
 
 export interface CreateTransactionRequest {
   type: TransactionType;
-  /** @minimum 0.01 */
+  /**
+     * @minimum 0.01
+     * @maximum 9999999999.99
+     */
   amount: number;
   /** @minLength 1 */
   description: string;
@@ -344,7 +347,10 @@ export interface CreateTransactionRequest {
 
 export interface UpdateTransactionRequest {
   type?: TransactionType;
-  /** @minimum 0.01 */
+  /**
+     * @minimum 0.01
+     * @maximum 9999999999.99
+     */
   amount?: number;
   /** @minLength 1 */
   description?: string;

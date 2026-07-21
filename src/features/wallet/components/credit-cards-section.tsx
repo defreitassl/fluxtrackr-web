@@ -1,4 +1,4 @@
-import { CreditCard } from "lucide-react";
+import { CreditCard, Plus } from "lucide-react";
 
 import type {
   CreditCard as CreditCardModel,
@@ -19,6 +19,11 @@ type CreditCardsSectionProps = {
   orphanInvoices: CreditCardInvoiceWithInstallments[];
   onSelectCard: (id: string) => void;
   onSelectInvoice: (id: string) => void;
+  onCreateCard: () => void;
+  onEditCard: (card: CreditCardModel) => void;
+  onArchiveCard: (card: CreditCardModel, currentInvoice: CreditCardInvoiceWithInstallments | undefined) => void;
+  onCreatePurchase: () => void;
+  onPayInvoice: (invoice: CreditCardInvoiceWithInstallments) => void;
 };
 
 export function CreditCardsSection({
@@ -30,10 +35,24 @@ export function CreditCardsSection({
   orphanInvoices,
   onSelectCard,
   onSelectInvoice,
+  onCreateCard,
+  onEditCard,
+  onArchiveCard,
+  onCreatePurchase,
+  onPayInvoice,
 }: CreditCardsSectionProps) {
   return (
     <section className="wallet-section wallet-cards-section" aria-labelledby="wallet-cards-title">
-      <WalletSectionHeading count={creditCards.length} id="wallet-cards-title" title="Cartões ativos" />
+      <WalletSectionHeading
+        action={(
+          <button className="primary-button wallet-inline-action" onClick={onCreateCard} type="button">
+            <Plus aria-hidden="true" size={16} /> Novo cartão
+          </button>
+        )}
+        count={creditCards.length}
+        id="wallet-cards-title"
+        title="Cartões ativos"
+      />
 
       {creditCards.length === 0 ? (
         <InlineEmpty icon={CreditCard} message="Nenhum cartão ativo foi retornado pela API." />
@@ -53,6 +72,10 @@ export function CreditCardsSection({
           </ul>
           <InvoiceDetails
             cardInvoices={cardInvoices}
+            onArchiveCard={onArchiveCard}
+            onCreatePurchase={onCreatePurchase}
+            onEditCard={onEditCard}
+            onPayInvoice={onPayInvoice}
             onSelectInvoice={onSelectInvoice}
             selectedCard={selectedCard}
             selectedInvoice={selectedInvoice}

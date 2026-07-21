@@ -1,7 +1,8 @@
 # FluxTrackr Web
 
-Frontend desktop do FluxTrackr. Inclui autenticação via BFF, App Shell,
-Dashboard e Timeline somente de leitura, consolidados pela API.
+Frontend desktop do FluxTrackr. Inclui autenticação via BFF, App Shell e seis
+telas principais: Dashboard, Timeline, Planejamento, Carteira, Transações e
+Categorias. Os valores financeiros exibidos são consolidados pela API.
 
 ## Stack
 
@@ -92,6 +93,25 @@ preserva o histórico e arquiva os orçamentos ativos vinculados no backend.
 Não há atualização otimista. Após escrita, a tela invalida `['categories']`,
 atualizando os seletores de Transações sem recalcular dados financeiros.
 
+Ícone e cor são uma apresentação estável derivada de `id`, nome e tipo da
+categoria. Não são campos persistidos, não fazem parte do payload e não alteram
+a semântica financeira da categoria.
+
+## Planejamento
+
+`/planning` consulta `GET /category-budgets/overview` por mês e ano UTC e
+`GET /categories?isActive=true` para identificar categorias elegíveis sem
+orçamento. Limite, gasto, restante, percentual e status chegam consolidados da
+API; a tela não calcula valores nem redefine os status
+`within_budget`, `near_limit` ou `exceeded`.
+
+A troca de período, o filtro de status e a ordenação existem somente para
+apresentação. O filtro seleciona itens pelo status retornado e a ordenação não
+altera o array nem a ordem de desempate fornecida pela API. Criar, editar ou
+arquivar um orçamento invalida `['category-budget-overview']`,
+`['category-budgets']`, `['financial-timeline']` e `['dashboard-overview']`,
+sem atualização otimista.
+
 ## Transações
 
 `/transactions` lista a resposta completa de `GET /transactions`, sem paginação
@@ -104,12 +124,25 @@ UTC, evitando uma mudança implícita de dia na apresentação.
 Criação usa `source: 'app'`; edição nunca altera a origem. Categorias e contas
 arquivadas não aparecem em novos seletores, mas uma categoria histórica é
 mantida ao editar outros campos. A API bloqueia categorias arquivadas ou
-incompatíveis com o tipo da transação em novas classificações.
+incompatíveis com o tipo da transação em novas classificações. O diálogo de
+detalhe mostra os campos retornados pela transação, inclusive conta, categoria,
+método, origem e datas em UTC.
 
-As mutations não são otimistas e invalidam `['transactions']`,
-`['wallet-overview']`, `['dashboard-overview']` e `['financial-timeline']`.
-Exclusão é física, requer confirmação explícita e deixa os cálculos financeiros
-para a API.
+O resumo mensal usa `GET /monthly-summary` para o mês UTC selecionado (ou o mês
+UTC atual sem filtro de data) e exibe receitas lançadas, despesas lançadas e
+saldo disponível exatamente como retornados. A lista nunca é somada no cliente
+para produzir esse resumo.
+
+**Nova movimentação** é somente um seletor de fluxo: encaminha para o
+formulário de receita/despesa, transferência entre contas ou compra no cartão.
+Ele não cria registro nem calcula valor por conta própria; transferência exige
+duas contas ativas e a compra deixa parcelas e fatura sob responsabilidade da
+API.
+
+As mutations de transação não são otimistas e invalidam `['transactions']`,
+`['monthly-summary']`, `['wallet-overview']`, `['dashboard-overview']` e
+`['financial-timeline']`. Exclusão é física, requer confirmação explícita e
+deixa os cálculos financeiros para a API.
 
 ## Carteira
 
@@ -135,6 +168,23 @@ atualização é coordenada entre Carteira e Dashboard; falhas parciais mostram 
 `selectedCardId` de `selectedInvoiceId`: todo cartão ativo é selecionável (mesmo
 sem fatura) e faturas cujo cartão não está na lista ativa continuam acessíveis,
 somente leitura, em “Outras faturas do mês”.
+
+### Cartões, compras e faturas
+
+A Carteira permite criar, editar e arquivar cartões, consultar faturas e
+parcelas do período UTC atual e registrar uma compra pelo fluxo
+`POST /credit-card-purchases`. A compra não gera parcelas, fatura ou totais no
+cliente: esses resultados vêm da API. Depois dela, o Web invalida
+`['wallet-overview']`, `['dashboard-overview']`, `['financial-timeline']`,
+`['credit-card-purchases']`, `['credit-card-invoices']` e
+`['category-budget-overview']`.
+
+Uma fatura aberta, fechada ou vencida pode ser paga integralmente em uma conta
+selecionada por `POST /credit-card-invoices/{id}/pay`. O pagamento invalida
+`['wallet-overview']`, `['dashboard-overview']`, `['financial-timeline']`,
+`['credit-card-invoices']`, `['credit-card-purchases']`, `['transactions']` e
+`['monthly-summary']`; não atualiza saldo, status ou valor de fatura de forma
+otimista.
 
 ### Gestão de contas
 
@@ -196,6 +246,13 @@ Entradas monetárias da criação de conta, ajuste e transferência aceitam vír
 ou ponto, mas normalizam para `Decimal(12,2)` (`-9.999.999.999,99` a
 `9.999.999.999,99`) antes de enviar. O Web continua somente apresentando os
 saldos retornados pela API.
+
+## Prontidão para deploy
+
+O recorte desktop considerado para fechamento reúne as seis telas principais:
+Dashboard, Timeline, Planejamento, Carteira, Transações e Categorias. O deploy
+não é consequência automática de concluir uma tela; ele só é iniciado após a
+revisão integrada desse conjunto e de suas validações.
 
 ## Validação local integrada
 

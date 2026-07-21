@@ -2,7 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Archive, CircleDollarSign, Pencil, Plus, RefreshCw, Tags } from "lucide-react";
+import { Archive, Pencil, Plus, RefreshCw, Tags } from "lucide-react";
+import type { CSSProperties } from "react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -26,6 +27,7 @@ import {
   toUpdateCategoryPayload,
   type CategoryFormValues,
 } from "@/features/categories/lib/category-form";
+import { categoryPresentation } from "@/features/categories/lib/category-presentation";
 import {
   type CategoriesFilters,
   type CategoryStatusFilter,
@@ -49,7 +51,7 @@ export function CategoriesScreen() {
   return (
     <section className="resource-screen" aria-labelledby="categories-title">
       <div className="resource-heading-row">
-        <PageHeader eyebrow="Organização" title="Categorias" description="Classifique receitas e despesas sem perder vínculos históricos." />
+        <PageHeader eyebrow="Organização" title="Categorias" titleId="categories-title" description="Classifique receitas e despesas sem perder vínculos históricos." />
         <div className="resource-heading-actions">
           <button className="secondary-button" disabled={query.isFetching} onClick={refresh} type="button">
             <RefreshCw aria-hidden="true" className={query.isFetching ? "is-spinning" : undefined} size={16} /> Atualizar
@@ -82,13 +84,13 @@ function CategoryFilters({ filters, onChange }: { filters: CategoriesFilters; on
 
 function CategoryList({ categories, onEdit, onArchive }: { categories: Category[]; onEdit: (category: Category) => void; onArchive: (category: Category) => void }) {
   return <ul className="resource-list category-list" aria-label="Categorias">
-    {categories.map((category) => <li className={!category.isActive ? "is-archived" : undefined} key={category.id}>
-      <span className="category-mark"><CircleDollarSign aria-hidden="true" size={18} /></span>
+    {categories.map((category) => { const presentation = categoryPresentation(category); return <li className={!category.isActive ? "is-archived" : undefined} key={category.id}>
+      <span className="category-mark" style={{ "--category-accent": presentation.color } as CSSProperties}><presentation.Icon aria-hidden="true" size={18} /></span>
       <div className="resource-item-main"><strong>{category.name}</strong><span>{categoryTypeLabel(category.type)} · {category.isActive ? "Ativa" : "Arquivada"}</span></div>
       <div className="resource-item-actions">
         {category.isActive ? <><button aria-label={`Editar ${category.name}`} className="icon-button" onClick={() => onEdit(category)} type="button"><Pencil aria-hidden="true" size={16} /></button><button aria-label={`Arquivar ${category.name}`} className="icon-button" onClick={() => onArchive(category)} type="button"><Archive aria-hidden="true" size={16} /></button></> : <span className="status-badge">Arquivada</span>}
       </div>
-    </li>)}</ul>;
+    </li>; })}</ul>;
 }
 
 function CategoryDialog({ mode, category, onClose, onSaved }: { mode: "create" | "edit"; category?: Category; onClose: () => void; onSaved: (message: string) => void }) {
@@ -122,4 +124,4 @@ function ArchiveCategoryDialog({ category, onClose, onArchived }: { category: Ca
 }
 
 function RefetchAlert({ onRetry }: { onRetry: () => void }) { return <div className="resource-refetch-alert" role="alert"><span>Não foi possível atualizar. Os dados exibidos podem estar desatualizados.</span><button className="secondary-button" onClick={onRetry} type="button">Tentar novamente</button></div>; }
-function CategorySkeleton() { return <div className="resource-skeleton" aria-label="Carregando categorias"><span /><span /><span /></div>; }
+function CategorySkeleton() { return <div className="resource-skeleton" aria-label="Carregando categorias" role="status"><span /><span /><span /></div>; }

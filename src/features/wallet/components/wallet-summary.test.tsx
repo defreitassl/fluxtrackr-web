@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
+import type { DashboardOverview } from "@/api/generated/client";
 import { WalletSummary } from "@/features/wallet/components/wallet-summary";
 
 afterEach(cleanup);
@@ -8,7 +9,7 @@ afterEach(cleanup);
 const dashboard = {
   balance: { total: "137.00", committed: "0.00", availableToSpend: "100.00" },
   nextInvoice: { amount: "480.00" },
-} as never;
+} as unknown as DashboardOverview;
 
 const counts = { accountCount: 1, cardCount: 1, invoiceCount: 1 };
 

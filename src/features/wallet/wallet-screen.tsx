@@ -2,12 +2,25 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { Account, AccountTransfer, CreateBalanceAdjustmentResponse } from "@/api/generated/client";
+import type {
+  Account,
+  AccountTransfer,
+  CreateBalanceAdjustmentResponse,
+  CreditCard,
+  CreditCardInvoiceWithInstallments,
+  CreditCardPurchase,
+  PaidCreditCardInvoice,
+} from "@/api/generated/client";
 import { ErrorState } from "@/components/ui/error-state";
 import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
 import { CreateAccountDialog } from "@/features/wallet/accounts/components/create-account-dialog";
 import { EditAccountDialog } from "@/features/wallet/accounts/components/edit-account-dialog";
 import { BalanceAdjustmentDialog } from "@/features/wallet/adjustments/components/balance-adjustment-dialog";
+import { ArchiveCreditCardDialog } from "@/features/wallet/credit-cards/components/archive-credit-card-dialog";
+import { CreateCreditCardDialog } from "@/features/wallet/credit-cards/components/create-credit-card-dialog";
+import { CreateCreditCardPurchaseDialog } from "@/features/wallet/credit-cards/components/create-credit-card-purchase-dialog";
+import { EditCreditCardDialog } from "@/features/wallet/credit-cards/components/edit-credit-card-dialog";
+import { PayCreditCardInvoiceDialog } from "@/features/wallet/credit-cards/components/pay-credit-card-invoice-dialog";
 import { AccountTransferDialog } from "@/features/wallet/transfers/components/account-transfer-dialog";
 import type { WalletAccount } from "@/features/wallet/api/get-wallet-overview";
 import { AccountsSection } from "@/features/wallet/components/accounts-section";
@@ -33,7 +46,13 @@ export function WalletScreen() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreateCardOpen, setIsCreateCardOpen] = useState(false);
+  const [isCreatePurchaseOpen, setIsCreatePurchaseOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [editingCard, setEditingCard] = useState<CreditCard | null>(null);
+  const [archivingCard, setArchivingCard] = useState<CreditCard | null>(null);
+  const [archivingInvoice, setArchivingInvoice] = useState<CreditCardInvoiceWithInstallments | null>(null);
+  const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [adjustingAccountId, setAdjustingAccountId] = useState<string | null>(null);
   const [transferringAccountId, setTransferringAccountId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -56,6 +75,8 @@ export function WalletScreen() {
     data?.accounts.find(({ account }) => account.id === selectedAccountId) ?? data?.accounts[0];
   const adjustingAccount = data?.accounts.find(({ account }) => account.id === adjustingAccountId);
   const transferringAccount = data?.accounts.find(({ account }) => account.id === transferringAccountId);
+  const payingInvoice = data?.invoices.find((invoice) => invoice.id === payingInvoiceId) ?? null;
+  const payingCard = data?.creditCards.find((card) => card.id === payingInvoice?.creditCardId) ?? null;
 
   const cardSelection = useMemo(
     () =>
@@ -127,6 +148,32 @@ export function WalletScreen() {
     setTransferringAccountId(account.id);
   };
 
+  const handleCreateCard = () => {
+    setSuccessMessage(null);
+    setIsCreateCardOpen(true);
+  };
+
+  const handleEditCard = (card: CreditCard) => {
+    setSuccessMessage(null);
+    setEditingCard(card);
+  };
+
+  const handleArchiveCard = (card: CreditCard, currentInvoice: CreditCardInvoiceWithInstallments | undefined) => {
+    setSuccessMessage(null);
+    setArchivingCard(card);
+    setArchivingInvoice(currentInvoice ?? null);
+  };
+
+  const handleCreatePurchase = () => {
+    setSuccessMessage(null);
+    setIsCreatePurchaseOpen(true);
+  };
+
+  const handlePayInvoice = (invoiceId: string) => {
+    setSuccessMessage(null);
+    setPayingInvoiceId(invoiceId);
+  };
+
   const handleAccountCreated = (account: Account) => {
     setSelectedAccountId(account.id);
     setIsCreateOpen(false);
@@ -149,6 +196,42 @@ export function WalletScreen() {
     setSelectedAccountId(transfer.sourceAccountId);
     setTransferringAccountId(null);
     showSuccess(`Transferência de ${formatCurrency(transfer.amount)} realizada com sucesso.`);
+  };
+
+  const handleCardCreated = (card: CreditCard) => {
+    setSelectedCardId(card.id);
+    setSelectedInvoiceId(null);
+    setIsCreateCardOpen(false);
+    showSuccess("Cartão criado com sucesso.");
+  };
+
+  const handleCardUpdated = (card: CreditCard) => {
+    setSelectedCardId(card.id);
+    setEditingCard(null);
+    showSuccess("Cartão atualizado com sucesso.");
+  };
+
+  const handleCardArchived = (card: CreditCard) => {
+    if (selectedCardId === card.id) {
+      setSelectedCardId(null);
+      setSelectedInvoiceId(null);
+    }
+    setArchivingCard(null);
+    setArchivingInvoice(null);
+    showSuccess("Cartão arquivado com sucesso.");
+  };
+
+  const handlePurchaseCreated = (purchase: CreditCardPurchase) => {
+    setSelectedCardId(purchase.creditCardId);
+    setIsCreatePurchaseOpen(false);
+    showSuccess("Compra no cartão registrada com sucesso.");
+  };
+
+  const handleInvoicePaid = (invoice: PaidCreditCardInvoice) => {
+    setSelectedCardId(invoice.creditCardId);
+    setSelectedInvoiceId(invoice.id);
+    setPayingInvoiceId(null);
+    showSuccess("Fatura paga integralmente com sucesso.");
   };
 
   const isWalletEmpty = data
@@ -209,6 +292,11 @@ export function WalletScreen() {
                 cardInvoices={cardSelection.cardInvoices}
                 creditCards={data.creditCards}
                 invoices={data.invoices}
+                onArchiveCard={handleArchiveCard}
+                onCreateCard={handleCreateCard}
+                onCreatePurchase={handleCreatePurchase}
+                onEditCard={handleEditCard}
+                onPayInvoice={(invoice) => handlePayInvoice(invoice.id)}
                 onSelectCard={handleSelectCard}
                 onSelectInvoice={setSelectedInvoiceId}
                 orphanInvoices={cardSelection.orphanInvoices}
@@ -250,6 +338,52 @@ export function WalletScreen() {
           initialSourceAccountId={transferringAccount.account.id}
           onClose={() => setTransferringAccountId(null)}
           onTransferred={handleTransferred}
+          open
+        />
+      ) : null}
+      {isCreateCardOpen ? (
+        <CreateCreditCardDialog
+          accounts={data?.accounts ?? []}
+          onClose={() => setIsCreateCardOpen(false)}
+          onCreated={handleCardCreated}
+          open
+        />
+      ) : null}
+      {editingCard ? (
+        <EditCreditCardDialog
+          accounts={data?.accounts ?? []}
+          card={editingCard}
+          onClose={() => setEditingCard(null)}
+          onUpdated={handleCardUpdated}
+          open
+        />
+      ) : null}
+      {archivingCard ? (
+        <ArchiveCreditCardDialog
+          card={archivingCard}
+          currentInvoice={archivingInvoice}
+          onArchived={handleCardArchived}
+          onClose={() => {
+            setArchivingCard(null);
+            setArchivingInvoice(null);
+          }}
+          open
+        />
+      ) : null}
+      {isCreatePurchaseOpen ? (
+        <CreateCreditCardPurchaseDialog
+          onClose={() => setIsCreatePurchaseOpen(false)}
+          onCreated={handlePurchaseCreated}
+          open
+        />
+      ) : null}
+      {payingInvoice ? (
+        <PayCreditCardInvoiceDialog
+          accounts={data?.accounts ?? []}
+          card={payingCard}
+          invoice={payingInvoice}
+          onClose={() => setPayingInvoiceId(null)}
+          onPaid={handleInvoicePaid}
           open
         />
       ) : null}

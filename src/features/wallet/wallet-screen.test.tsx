@@ -150,7 +150,7 @@ function mockMutations() {
 }
 
 describe("WalletScreen", () => {
-  it("shows only API-returned financial values and read-only account/card details", () => {
+  it("shows API-returned financial values and card actions without client-side calculations", () => {
     mockWallet();
     mockDashboard();
     mockMutations();
@@ -163,7 +163,10 @@ describe("WalletScreen", () => {
     expect(screen.getByText(/20 de jul. de 2026, 23:30 UTC/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Conta principal/ })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Transferir" })).toBeDisabled();
-    expect(screen.queryByRole("button", { name: /Pagar fatura|Arquivar|Excluir/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nova compra" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Editar cartão" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Arquivar cartão" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pagar fatura integralmente" })).toBeInTheDocument();
   });
 
   it("keeps data visible and retries after a wallet refetch error", () => {
