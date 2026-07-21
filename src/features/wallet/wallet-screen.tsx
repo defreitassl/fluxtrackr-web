@@ -1,5 +1,6 @@
 "use client";
 
+import { Info, Plus, TriangleAlert, Wallet } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type {
@@ -11,29 +12,27 @@ import type {
   CreditCardPurchase,
   PaidCreditCardInvoice,
 } from "@/api/generated/client";
-import { ErrorState } from "@/components/ui/error-state";
 import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
 import { CreateAccountDialog } from "@/features/wallet/accounts/components/create-account-dialog";
 import { EditAccountDialog } from "@/features/wallet/accounts/components/edit-account-dialog";
 import { BalanceAdjustmentDialog } from "@/features/wallet/adjustments/components/balance-adjustment-dialog";
+import type { WalletAccount } from "@/features/wallet/api/get-wallet-overview";
+import { PayInvoiceDrawer } from "@/features/wallet/components/pay-invoice-drawer";
+import { WalletAccountsGrid } from "@/features/wallet/components/wallet-accounts-grid";
+import { WalletAddDialog } from "@/features/wallet/components/wallet-add-dialog";
+import { WalletCardRows } from "@/features/wallet/components/wallet-card-rows";
+import { WalletInvoicePanel } from "@/features/wallet/components/wallet-invoice-panel";
+import { WalletTiles } from "@/features/wallet/components/wallet-tiles";
 import { ArchiveCreditCardDialog } from "@/features/wallet/credit-cards/components/archive-credit-card-dialog";
 import { CreateCreditCardDialog } from "@/features/wallet/credit-cards/components/create-credit-card-dialog";
 import { CreateCreditCardPurchaseDialog } from "@/features/wallet/credit-cards/components/create-credit-card-purchase-dialog";
 import { EditCreditCardDialog } from "@/features/wallet/credit-cards/components/edit-credit-card-dialog";
-import { PayCreditCardInvoiceDialog } from "@/features/wallet/credit-cards/components/pay-credit-card-invoice-dialog";
 import { AccountTransferDialog } from "@/features/wallet/transfers/components/account-transfer-dialog";
-import type { WalletAccount } from "@/features/wallet/api/get-wallet-overview";
-import { AccountsSection } from "@/features/wallet/components/accounts-section";
-import { CreditCardsSection } from "@/features/wallet/components/credit-cards-section";
-import { EmptyWallet } from "@/features/wallet/components/wallet-empty-states";
-import { WalletFeedback, type RefetchErrorKind } from "@/features/wallet/components/wallet-feedback";
-import { WalletHeader } from "@/features/wallet/components/wallet-header";
-import { WalletSkeleton } from "@/features/wallet/components/wallet-skeleton";
-import { WalletSummary } from "@/features/wallet/components/wallet-summary";
 import { useCurrentWalletPeriod } from "@/features/wallet/hooks/use-current-wallet-period";
 import { resolveWalletCardSelection } from "@/features/wallet/lib/wallet-selection";
 import { useWalletOverview } from "@/features/wallet/queries/use-wallet-overview";
 import { formatCurrency } from "@/lib/format";
+import { useGlobalSearch } from "@/providers/search-provider";
 
 const SUCCESS_MESSAGE_TIMEOUT = 5000;
 
@@ -41,10 +40,11 @@ export function WalletScreen() {
   const { period, refreshPeriod } = useCurrentWalletPeriod();
   const wallet = useWalletOverview(period);
   const dashboard = useDashboardOverview();
+  const { query: search } = useGlobalSearch();
 
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreateCardOpen, setIsCreateCardOpen] = useState(false);
   const [isCreatePurchaseOpen, setIsCreatePurchaseOpen] = useState(false);
@@ -60,62 +60,79 @@ export function WalletScreen() {
 
   const data = wallet.data;
 
-  // A troca de período reaproveita a derivação de seleção: se a fatura anterior
-  // deixar de existir, `resolveWalletCardSelection` cai para a primeira fatura
-  // compatível do cartão — sem manter uma fatura do mês anterior selecionada.
   useEffect(() => {
     return () => {
-      if (successTimer.current) {
-        clearTimeout(successTimer.current);
-      }
+      if (successTimer.current) clearTimeout(successTimer.current);
     };
   }, []);
 
-  const selectedAccount =
-    data?.accounts.find(({ account }) => account.id === selectedAccountId) ?? data?.accounts[0];
+  // Ações do header global (Transferir / Adicionar).
+  useEffect(() => {
+    function openAdd() {
+      setSuccessMessage(null);
+      setIsAddOpen(true);
+    }
+    function openTransfer() {
+      setSuccessMessage(null);
+      setTransferringAccountId((current) => current ?? wallet.data?.accounts[0]?.account.id ?? null);
+    }
+    window.addEventListener("fluxtrackr:wallet-add", openAdd);
+    window.addEventListener("fluxtrackr:wallet-transfer", openTransfer);
+    return () => {
+      window.removeEventListener("fluxtrackr:wallet-add", openAdd);
+      window.removeEventListener("fluxtrackr:wallet-transfer", openTransfer);
+    };
+  }, [wallet.data]);
+
+  const term = search.trim().toLowerCase();
+  const filteredAccounts = useMemo(
+    () =>
+      (data?.accounts ?? []).filter(({ account }) =>
+        term ? `${account.name} ${account.bank ?? ""}`.toLowerCase().includes(term) : true,
+      ),
+    [data?.accounts, term],
+  );
+  const filteredCards = useMemo(
+    () =>
+      (data?.creditCards ?? []).filter((card) =>
+        term
+          ? `${card.name} ${card.bankName ?? ""} ${card.lastFourDigits ?? ""}`.toLowerCase().includes(term)
+          : true,
+      ),
+    [data?.creditCards, term],
+  );
+
+  const cardSelection = useMemo(
+    () =>
+      resolveWalletCardSelection({
+        creditCards: filteredCards,
+        invoices: data?.invoices ?? [],
+        selectedCardId,
+        selectedInvoiceId,
+      }),
+    [filteredCards, data?.invoices, selectedCardId, selectedInvoiceId],
+  );
+
   const adjustingAccount = data?.accounts.find(({ account }) => account.id === adjustingAccountId);
   const transferringAccount = data?.accounts.find(({ account }) => account.id === transferringAccountId);
   const payingInvoice = data?.invoices.find((invoice) => invoice.id === payingInvoiceId) ?? null;
   const payingCard = data?.creditCards.find((card) => card.id === payingInvoice?.creditCardId) ?? null;
 
-  const cardSelection = useMemo(
-    () =>
-      resolveWalletCardSelection({
-        creditCards: data?.creditCards ?? [],
-        invoices: data?.invoices ?? [],
-        selectedCardId,
-        selectedInvoiceId,
-      }),
-    [data?.creditCards, data?.invoices, selectedCardId, selectedInvoiceId],
-  );
-
   const isRefreshing = wallet.isFetching || dashboard.isFetching;
-  const refetchErrorKind: RefetchErrorKind = wallet.isRefetchError
-    ? "all"
-    : dashboard.isRefetchError
-      ? "dashboard-only"
-      : "none";
 
   const showSuccess = (message: string) => {
     setSuccessMessage(message);
-    if (successTimer.current) {
-      clearTimeout(successTimer.current);
-    }
+    if (successTimer.current) clearTimeout(successTimer.current);
     successTimer.current = setTimeout(() => setSuccessMessage(null), SUCCESS_MESSAGE_TIMEOUT);
   };
 
   const refreshWallet = () => {
-    if (isRefreshing) {
-      return;
-    }
+    if (isRefreshing) return;
     const { changed } = refreshPeriod();
     if (changed) {
-      // A nova query key da Carteira busca o período UTC recém-calculado.
-      // Não refetchamos a chave anterior durante a troca de mês.
       void dashboard.refetch({ cancelRefetch: false });
       return;
     }
-
     void Promise.all([
       wallet.refetch({ cancelRefetch: false }),
       dashboard.refetch({ cancelRefetch: false }),
@@ -128,72 +145,22 @@ export function WalletScreen() {
     setSelectedInvoiceId(firstInvoice?.id ?? null);
   };
 
-  const handleCreateAccount = () => {
-    setSuccessMessage(null);
-    setIsCreateOpen(true);
-  };
-
-  const handleEditAccount = (account: Account) => {
-    setSuccessMessage(null);
-    setEditingAccount(account);
-  };
-
-  const handleAdjustAccount = (walletAccount: WalletAccount) => {
-    setSuccessMessage(null);
-    setAdjustingAccountId(walletAccount.account.id);
-  };
-
-  const handleTransferAccount = (account: Account) => {
-    setSuccessMessage(null);
-    setTransferringAccountId(account.id);
-  };
-
-  const handleCreateCard = () => {
-    setSuccessMessage(null);
-    setIsCreateCardOpen(true);
-  };
-
-  const handleEditCard = (card: CreditCard) => {
-    setSuccessMessage(null);
-    setEditingCard(card);
-  };
-
-  const handleArchiveCard = (card: CreditCard, currentInvoice: CreditCardInvoiceWithInstallments | undefined) => {
-    setSuccessMessage(null);
-    setArchivingCard(card);
-    setArchivingInvoice(currentInvoice ?? null);
-  };
-
-  const handleCreatePurchase = () => {
-    setSuccessMessage(null);
-    setIsCreatePurchaseOpen(true);
-  };
-
-  const handlePayInvoice = (invoiceId: string) => {
-    setSuccessMessage(null);
-    setPayingInvoiceId(invoiceId);
-  };
-
   const handleAccountCreated = (account: Account) => {
-    setSelectedAccountId(account.id);
     setIsCreateOpen(false);
-    showSuccess("Conta criada com sucesso.");
+    showSuccess(`Conta ${account.name} criada com sucesso.`);
   };
 
   const handleAccountUpdated = (account: Account) => {
-    setSelectedAccountId(account.id);
     setEditingAccount(null);
-    showSuccess("Conta atualizada com sucesso.");
+    showSuccess(`Conta ${account.name} atualizada.`);
   };
 
   const handleBalanceAdjusted = (response: CreateBalanceAdjustmentResponse) => {
-    setSelectedAccountId(response.adjustment.accountId);
     setAdjustingAccountId(null);
     showSuccess(`Saldo ajustado para ${formatCurrency(response.currentBalance)}.`);
   };
 
   const handleTransferred = (transfer: AccountTransfer) => {
-    setSelectedAccountId(transfer.sourceAccountId);
     setTransferringAccountId(null);
     showSuccess(`Transferência de ${formatCurrency(transfer.amount)} realizada com sucesso.`);
   };
@@ -234,86 +201,163 @@ export function WalletScreen() {
     showSuccess("Fatura paga integralmente com sucesso.");
   };
 
-  const isWalletEmpty = data
-    ? data.accounts.length === 0 && data.creditCards.length === 0
-    : false;
+  const isWalletEmpty = data ? data.accounts.length === 0 && data.creditCards.length === 0 : false;
 
   return (
-    <section className="wallet-screen" aria-labelledby="wallet-title">
-      <WalletHeader
-        isInitialLoading={wallet.isPending}
-        isRefreshing={isRefreshing}
-        onRefresh={refreshWallet}
+    <section className="wlx-screen" aria-label="Carteira">
+      <div className="wlx-main">
+        {wallet.isPending && !data ? (
+          <div aria-busy="true" aria-label="Carregando Carteira" className="wlx-skeleton" role="status">
+            <span />
+            <span />
+            <span />
+          </div>
+        ) : null}
+
+        {wallet.isError && !data ? (
+          <div className="tlx-state" role="alert">
+            <div>
+              <span className="tlx-state-icon tlx-tone-red">
+                <TriangleAlert aria-hidden="true" size={24} />
+              </span>
+              <strong>Não foi possível carregar a carteira</strong>
+              <p>Seus saldos estão seguros. Tente novamente em instantes.</p>
+              <button className="tlx-state-retry" onClick={refreshWallet} type="button">
+                Tentar novamente
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {data ? (
+          <>
+            {successMessage ? (
+              <p className="mutation-feedback" role="status" style={{ marginBottom: 12 }}>
+                {successMessage}
+              </p>
+            ) : null}
+            {wallet.isRefetchError || dashboard.isRefetchError ? (
+              <div className="timeline-refetch-alert tlx-refetch-alert" role="alert">
+                <span>Não foi possível atualizar. Os dados exibidos podem estar desatualizados.</span>
+                <button className="secondary-button" onClick={refreshWallet} type="button">
+                  Tentar novamente
+                </button>
+              </div>
+            ) : null}
+
+            <WalletTiles dashboard={dashboard.data} overview={data} />
+
+            <div className="wlx-info-banner">
+              <Info aria-hidden="true" size={14} />
+              <span>
+                O saldo das contas só diminui quando a fatura do cartão é paga. Até lá, ela conta como
+                valor comprometido.
+              </span>
+            </div>
+
+            {isWalletEmpty ? (
+              <div className="tlx-state">
+                <div>
+                  <span className="tlx-state-icon tlx-tone-green">
+                    <Wallet aria-hidden="true" size={24} />
+                  </span>
+                  <strong>Nenhuma conta ou cartão ainda</strong>
+                  <p>Adicione uma conta para começar a acompanhar seus saldos.</p>
+                  <button className="tlx-state-cta" onClick={() => setIsCreateOpen(true)} type="button">
+                    <Plus aria-hidden="true" size={14} strokeWidth={2.4} />
+                    Adicionar conta
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="wlx-section-head">
+                  <h2>Contas</h2>
+                  <button className="dx-panel-link" onClick={() => setIsAddOpen(true)} type="button">
+                    Gerenciar
+                  </button>
+                </div>
+                <WalletAccountsGrid
+                  accounts={filteredAccounts}
+                  onAdjustAccount={(walletAccount: WalletAccount) => {
+                    setSuccessMessage(null);
+                    setAdjustingAccountId(walletAccount.account.id);
+                  }}
+                  onCreateAccount={() => {
+                    setSuccessMessage(null);
+                    setIsCreateOpen(true);
+                  }}
+                  onEditAccount={(account) => {
+                    setSuccessMessage(null);
+                    setEditingAccount(account);
+                  }}
+                  onTransferAccount={(account) => {
+                    setSuccessMessage(null);
+                    setTransferringAccountId(account.id);
+                  }}
+                />
+
+                <div className="wlx-section-head">
+                  <h2>Cartões</h2>
+                  <button className="dx-panel-link" onClick={() => setIsAddOpen(true)} type="button">
+                    Gerenciar
+                  </button>
+                </div>
+                <WalletCardRows
+                  creditCards={filteredCards}
+                  invoices={data.invoices}
+                  onCreateCard={() => {
+                    setSuccessMessage(null);
+                    setIsCreateCardOpen(true);
+                  }}
+                  onSelectCard={handleSelectCard}
+                  selectedCardId={cardSelection.selectedCard?.id ?? null}
+                />
+              </>
+            )}
+          </>
+        ) : null}
+      </div>
+
+      <WalletInvoicePanel
+        card={cardSelection.selectedCard ?? null}
+        cardInvoices={cardSelection.cardInvoices}
+        invoice={cardSelection.selectedInvoice ?? null}
+        onArchiveCard={(card, invoice) => {
+          setSuccessMessage(null);
+          setArchivingCard(card);
+          setArchivingInvoice(invoice ?? null);
+        }}
+        onCreatePurchase={() => {
+          setSuccessMessage(null);
+          setIsCreatePurchaseOpen(true);
+        }}
+        onEditCard={(card) => {
+          setSuccessMessage(null);
+          setEditingCard(card);
+        }}
+        onPay={(invoice) => {
+          setSuccessMessage(null);
+          setPayingInvoiceId(invoice.id);
+        }}
+        onSelectInvoice={setSelectedInvoiceId}
       />
 
-      {wallet.isPending && !data ? <WalletSkeleton /> : null}
-
-      {wallet.isError && !data ? (
-        <ErrorState
-          description="Não foi possível obter sua Carteira agora. Tente novamente em instantes."
-          onRetry={refreshWallet}
-          title="Carteira indisponível"
-        />
-      ) : null}
-
-      {data ? (
-        <div className="wallet-content" aria-busy={isRefreshing}>
-          <WalletFeedback
-            isRefreshing={isRefreshing}
-            onRetry={refreshWallet}
-            refetchErrorKind={refetchErrorKind}
-          />
-
-          <WalletSummary
-            accountCount={data.accounts.length}
-            cardCount={data.creditCards.length}
-            dashboard={dashboard.data}
-            invoiceCount={data.invoices.length}
-            isDashboardLoading={dashboard.isPending}
-            isDashboardUnavailable={dashboard.isError && !dashboard.data}
-          />
-
-          {isWalletEmpty ? (
-            <EmptyWallet onCreateAccount={handleCreateAccount} />
-          ) : (
-            <div className="wallet-sections">
-              <AccountsSection
-                accounts={data.accounts}
-                onAdjustAccount={handleAdjustAccount}
-                onCreateAccount={handleCreateAccount}
-                onEditAccount={handleEditAccount}
-                onSelectAccount={setSelectedAccountId}
-                onTransferAccount={handleTransferAccount}
-                selectedAccount={selectedAccount}
-                successMessage={successMessage}
-              />
-
-              <CreditCardsSection
-                cardInvoices={cardSelection.cardInvoices}
-                creditCards={data.creditCards}
-                invoices={data.invoices}
-                onArchiveCard={handleArchiveCard}
-                onCreateCard={handleCreateCard}
-                onCreatePurchase={handleCreatePurchase}
-                onEditCard={handleEditCard}
-                onPayInvoice={(invoice) => handlePayInvoice(invoice.id)}
-                onSelectCard={handleSelectCard}
-                onSelectInvoice={setSelectedInvoiceId}
-                orphanInvoices={cardSelection.orphanInvoices}
-                selectedCard={cardSelection.selectedCard}
-                selectedInvoice={cardSelection.selectedInvoice}
-              />
-            </div>
-          )}
-        </div>
-      ) : null}
+      <WalletAddDialog
+        onClose={() => setIsAddOpen(false)}
+        onCreateAccount={() => {
+          setIsAddOpen(false);
+          setIsCreateOpen(true);
+        }}
+        onCreateCard={() => {
+          setIsAddOpen(false);
+          setIsCreateCardOpen(true);
+        }}
+        open={isAddOpen}
+      />
 
       {isCreateOpen ? (
-        <CreateAccountDialog
-          onClose={() => setIsCreateOpen(false)}
-          onCreated={handleAccountCreated}
-          open
-        />
+        <CreateAccountDialog onClose={() => setIsCreateOpen(false)} onCreated={handleAccountCreated} open />
       ) : null}
       {editingAccount ? (
         <EditAccountDialog
@@ -378,16 +422,14 @@ export function WalletScreen() {
           open
         />
       ) : null}
-      {payingInvoice ? (
-        <PayCreditCardInvoiceDialog
-          accounts={data?.accounts ?? []}
-          card={payingCard}
-          invoice={payingInvoice}
-          onClose={() => setPayingInvoiceId(null)}
-          onPaid={handleInvoicePaid}
-          open
-        />
-      ) : null}
+      <PayInvoiceDrawer
+        accounts={data?.accounts ?? []}
+        card={payingCard}
+        invoice={payingInvoice}
+        onClose={() => setPayingInvoiceId(null)}
+        onPaid={handleInvoicePaid}
+        open={payingInvoice !== null}
+      />
     </section>
   );
 }

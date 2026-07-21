@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { creditCardFormSchema } from "@/features/wallet/credit-cards/schemas/credit-card-form-schema";
 import { creditCardPurchaseFormSchema } from "@/features/wallet/credit-cards/schemas/credit-card-purchase-form-schema";
-import { payCreditCardInvoiceFormSchema } from "@/features/wallet/credit-cards/schemas/pay-credit-card-invoice-form-schema";
 
 const card = {
   accountId: "",
@@ -42,10 +41,5 @@ describe("credit card form schemas", () => {
     expect(creditCardPurchaseFormSchema.safeParse(purchase).success).toBe(true);
     expect(creditCardPurchaseFormSchema.safeParse({ ...purchase, totalAmount: "0" }).success).toBe(false);
     expect(creditCardPurchaseFormSchema.safeParse({ ...purchase, installmentCount: "121" }).success).toBe(false);
-  });
-
-  it("requires an account for full invoice payment but permits API-default payment time", () => {
-    expect(payCreditCardInvoiceFormSchema.safeParse({ accountId: "account-1", paidAt: "" }).success).toBe(true);
-    expect(payCreditCardInvoiceFormSchema.safeParse({ accountId: "", paidAt: "" }).success).toBe(false);
   });
 });

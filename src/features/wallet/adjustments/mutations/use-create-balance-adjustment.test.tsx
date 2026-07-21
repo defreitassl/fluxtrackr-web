@@ -30,7 +30,7 @@ describe("useCreateBalanceAdjustment", () => {
 
     await result.current.mutateAsync({ accountId: "account-1", payload: { newBalance: "1500.00" } });
 
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["account-balance-adjustments", "account-1"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["account-balance-adjustments", { accountId: "account-1" }] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["wallet-overview"] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["dashboard-overview"] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["financial-timeline"] });

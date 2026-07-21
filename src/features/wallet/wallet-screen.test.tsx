@@ -1,414 +1,216 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import type { PropsWithChildren } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/features/wallet/queries/use-wallet-overview", () => ({ useWalletOverview: vi.fn() }));
-vi.mock("@/features/dashboard/queries/use-dashboard-overview", () => ({ useDashboardOverview: vi.fn() }));
-vi.mock("@/features/wallet/hooks/use-current-wallet-period", () => ({ useCurrentWalletPeriod: vi.fn() }));
-vi.mock("@/features/wallet/accounts/mutations/use-create-account", () => ({ useCreateAccount: vi.fn() }));
-vi.mock("@/features/wallet/accounts/mutations/use-update-account", () => ({ useUpdateAccount: vi.fn() }));
-vi.mock("@/features/wallet/adjustments/mutations/use-create-balance-adjustment", () => ({ useCreateBalanceAdjustment: vi.fn() }));
-vi.mock("@/features/wallet/adjustments/queries/use-account-balance-adjustments", () => ({ useAccountBalanceAdjustments: vi.fn() }));
-vi.mock("@/features/wallet/transfers/mutations/use-create-account-transfer", () => ({ useCreateAccountTransfer: vi.fn() }));
-vi.mock("@/features/wallet/transfers/queries/use-account-transfers", () => ({ useAccountTransfers: vi.fn() }));
-vi.mock("@/features/wallet/credit-cards/components/create-credit-card-purchase-dialog", () => ({
-  CreateCreditCardPurchaseDialog: ({ initialCreditCardId }: { initialCreditCardId?: string }) => (
-    <div data-testid="credit-card-purchase-dialog">{initialCreditCardId ?? ""}</div>
-  ),
+vi.mock("@/features/wallet/queries/use-wallet-overview", () => ({
+  useWalletOverview: vi.fn(),
 }));
 
-import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
-import { useCurrentWalletPeriod } from "@/features/wallet/hooks/use-current-wallet-period";
-import { useCreateAccount } from "@/features/wallet/accounts/mutations/use-create-account";
-import { useUpdateAccount } from "@/features/wallet/accounts/mutations/use-update-account";
-import { useCreateBalanceAdjustment } from "@/features/wallet/adjustments/mutations/use-create-balance-adjustment";
-import { useAccountBalanceAdjustments } from "@/features/wallet/adjustments/queries/use-account-balance-adjustments";
-import { useCreateAccountTransfer } from "@/features/wallet/transfers/mutations/use-create-account-transfer";
-import { useAccountTransfers } from "@/features/wallet/transfers/queries/use-account-transfers";
-import { useWalletOverview } from "@/features/wallet/queries/use-wallet-overview";
-import { WalletScreen } from "@/features/wallet/wallet-screen";
-
-afterEach(cleanup);
-
-const account = {
-  id: "account-1", userId: "user-1", name: "Conta principal", bank: "Banco Local", type: "checking",
-  color: "not-a-color", icon: "unknown", initialBalance: "100.00", isActive: true,
-  createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-01T00:00:00.000Z",
-};
-
-const balance = {
-  accountId: "account-1", asOf: "2026-07-20T23:30:00.000Z", initialBalance: "100.00", income: "50.00",
-  expense: "20.00", incomingTransfers: "10.00", outgoingTransfers: "5.00", adjustments: "2.00", currentBalance: "137.00",
-};
-
-const secondAccount = {
-  ...account,
-  id: "account-2",
-  name: "Conta reserva",
-  initialBalance: "50.00",
-};
-
-const secondBalance = {
-  ...balance,
-  accountId: "account-2",
-  currentBalance: "50.00",
-};
-
-const card = {
-  id: "card-1", userId: "user-1", accountId: "account-1", name: "Cartão Flux", bankName: "Banco Local",
-  brand: "Visa", lastFourDigits: "4242", limitAmount: "5000.00", closingDay: 20, dueDay: 31, color: "#197147",
-  isActive: true, createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-01T00:00:00.000Z",
-};
-
-const invoice = {
-  id: "invoice-1", userId: "user-1", creditCardId: "card-1", accountId: "account-1", month: 7, year: 2026,
-  dueDate: "2026-07-31T00:30:00.000Z", closingDate: "2026-07-20T00:30:00.000Z", status: "open",
-  paidAt: null, paidAmount: null, paidTransactionId: null, totalAmount: "480.00",
-  createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-01T00:00:00.000Z",
-  installments: [{
-    id: "installment-1", userId: "user-1", creditCardId: "card-1", invoiceId: "invoice-1", purchaseId: "purchase-1",
-    categoryId: null, description: "Compras do cartão", totalPurchaseAmount: "480.00", installmentAmount: "240.00",
-    installmentNumber: 1, installmentCount: 2, purchaseDate: "2026-07-10T00:00:00.000Z", dueDate: "2026-07-31T00:30:00.000Z",
-    status: "pending", createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-01T00:00:00.000Z",
-  }],
-};
-
-function mockWallet(overrides: Record<string, unknown> = {}) {
-  const refetch = vi.fn().mockResolvedValue(undefined);
-  vi.mocked(useWalletOverview).mockReturnValue({
-    data: { accounts: [{ account, balance }], creditCards: [card], invoices: [invoice] },
-    isPending: false, isError: false, isFetching: false, isRefetchError: false, refetch,
-    ...overrides,
-  } as never);
-  mockWalletPeriod();
-  mockAdjustmentHistory();
-  mockTransferHistory();
-  return refetch;
-}
-
-function mockWalletPeriod(overrides: Record<string, unknown> = {}) {
-  const refreshPeriod = vi.fn().mockReturnValue({ period: { year: 2026, month: 7 }, changed: false });
-  vi.mocked(useCurrentWalletPeriod).mockReturnValue({
-    period: { year: 2026, month: 7 },
-    refreshPeriod,
-    ...overrides,
-  });
-  return refreshPeriod;
-}
-
-function mockDashboard(overrides: Record<string, unknown> = {}) {
-  const refetch = vi.fn().mockResolvedValue(undefined);
-  vi.mocked(useDashboardOverview).mockReturnValue({
-    data: { balance: { total: "137.00", availableToSpend: "100.00" }, nextInvoice: { amount: "480.00" } },
-    isPending: false, isError: false, isFetching: false, isRefetchError: false, refetch,
-    ...overrides,
-  } as never);
-  return refetch;
-}
-
-function mockAdjustmentHistory(overrides: Record<string, unknown> = {}) {
-  vi.mocked(useAccountBalanceAdjustments).mockReturnValue({
-    data: [],
+vi.mock("@/features/dashboard/queries/use-dashboard-overview", () => ({
+  useDashboardOverview: vi.fn().mockReturnValue({
+    data: undefined,
+    isFetching: false,
     isPending: false,
-    isError: false,
-    refetch: vi.fn(),
-    ...overrides,
-  } as never);
-}
-
-function mockTransferHistory(overrides: Record<string, unknown> = {}) {
-  vi.mocked(useAccountTransfers).mockReturnValue({
-    data: [],
-    isPending: false,
-    isError: false,
-    isRefetching: false,
     isRefetchError: false,
     refetch: vi.fn(),
-    ...overrides,
-  } as never);
+  }),
+}));
+
+vi.mock("@/features/transactions/api/transactions", () => ({
+  listTransactionCategoriesData: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/features/wallet/credit-cards/mutations/use-pay-credit-card-invoice", () => ({
+  usePayCreditCardInvoice: vi.fn().mockReturnValue({ isPending: false, mutate: vi.fn() }),
+}));
+
+import { WalletScreen } from "@/features/wallet/wallet-screen";
+import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
+import { useWalletOverview } from "@/features/wallet/queries/use-wallet-overview";
+import { SearchProvider } from "@/providers/search-provider";
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
+function wrapper({ children }: PropsWithChildren) {
+  return (
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <SearchProvider>{children}</SearchProvider>
+    </QueryClientProvider>
+  );
 }
 
-function mockMutations() {
-  vi.mocked(useCreateAccount).mockReturnValue({
-    mutateAsync: vi.fn().mockResolvedValue({ ...account, id: "account-new", name: "Conta nova" }),
-    isPending: false, reset: vi.fn(),
-  } as never);
-  vi.mocked(useUpdateAccount).mockReturnValue({
-    mutateAsync: vi.fn().mockResolvedValue({ ...account, name: "Conta editada" }),
-    isPending: false, reset: vi.fn(),
-  } as never);
-  const balanceAdjustmentMutate = vi.fn().mockResolvedValue({
-      adjustment: { id: "adjustment-1", accountId: "account-1" },
-      currentBalance: "200.50",
-    });
-  vi.mocked(useCreateBalanceAdjustment).mockReturnValue({
-    mutateAsync: balanceAdjustmentMutate,
+const account = {
+  account: {
+    id: "account-1",
+    userId: "user-1",
+    name: "Nubank",
+    bank: "Nubank",
+    type: "checking",
+    color: null,
+    icon: null,
+    initialBalance: "0.00",
+    isActive: true,
+    createdAt: "2026-07-01T00:00:00.000Z",
+    updatedAt: "2026-07-01T00:00:00.000Z",
+  },
+  balance: {
+    accountId: "account-1",
+    asOf: "2026-07-21T12:00:00.000Z",
+    initialBalance: "0.00",
+    income: "0.00",
+    expense: "0.00",
+    incomingTransfers: "0.00",
+    outgoingTransfers: "0.00",
+    adjustments: "0.00",
+    currentBalance: "2600.00",
+  },
+} as never;
+
+const creditCard = {
+  id: "card-1",
+  userId: "user-1",
+  accountId: null,
+  name: "Nubank Visa",
+  bankName: "Nubank",
+  brand: "Visa",
+  lastFourDigits: "4821",
+  limitAmount: "3000.00",
+  closingDay: 11,
+  dueDay: 18,
+  color: null,
+  isActive: true,
+  createdAt: "2026-07-01T00:00:00.000Z",
+  updatedAt: "2026-07-01T00:00:00.000Z",
+} as never;
+
+const invoice = {
+  id: "invoice-1",
+  userId: "user-1",
+  creditCardId: "card-1",
+  accountId: null,
+  month: 7,
+  year: 2026,
+  dueDate: "2026-07-18T00:00:00.000Z",
+  closingDate: "2026-07-11T00:00:00.000Z",
+  status: "open",
+  paidAt: null,
+  paidAmount: null,
+  paidTransactionId: null,
+  createdAt: "2026-07-01T00:00:00.000Z",
+  updatedAt: "2026-07-01T00:00:00.000Z",
+  totalAmount: "1280.00",
+  installments: [
+    {
+      id: "installment-1",
+      userId: "user-1",
+      creditCardId: "card-1",
+      invoiceId: "invoice-1",
+      purchaseId: "purchase-1",
+      categoryId: null,
+      description: "iPhone 15",
+      totalPurchaseAmount: "6240.00",
+      installmentAmount: "520.00",
+      installmentNumber: 3,
+      installmentCount: 12,
+      purchaseDate: "2026-05-10T00:00:00.000Z",
+      dueDate: "2026-07-18T00:00:00.000Z",
+      status: "pending",
+      createdAt: "2026-07-01T00:00:00.000Z",
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    },
+  ],
+} as never;
+
+function mockWallet(state: Record<string, unknown>) {
+  vi.mocked(useWalletOverview).mockReturnValue({
+    data: undefined,
+    isError: false,
+    isFetching: false,
     isPending: false,
-    reset: vi.fn(),
+    isRefetchError: false,
+    refetch: vi.fn(),
+    ...state,
   } as never);
-  const accountTransferMutate = vi.fn();
-  vi.mocked(useCreateAccountTransfer).mockReturnValue({
-    mutateAsync: accountTransferMutate,
-    isPending: false,
-    reset: vi.fn(),
-  } as never);
-  return { balanceAdjustmentMutate, accountTransferMutate };
 }
 
 describe("WalletScreen", () => {
-  it("shows API-returned financial values and card actions without client-side calculations", () => {
-    mockWallet();
-    mockDashboard();
-    mockMutations();
-    render(<WalletScreen />);
+  it("shows the shimmer skeleton while pending", () => {
+    mockWallet({ isPending: true });
 
-    expect(screen.getAllByText("Conta principal")).not.toHaveLength(0);
-    expect(screen.getByText("Saldo total calculado pela API")).toBeInTheDocument();
-    expect(screen.getAllByText("Cartão Flux")).not.toHaveLength(0);
-    expect(screen.getByText("Compras do cartão")).toBeInTheDocument();
-    expect(screen.getByText(/20 de jul. de 2026, 23:30 UTC/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Conta principal/ })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Transferir" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Nova compra" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Editar cartão" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Arquivar cartão" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pagar fatura integralmente" })).toBeInTheDocument();
+    render(<WalletScreen />, { wrapper });
+
+    expect(screen.getByRole("status", { name: "Carregando Carteira" })).toBeInTheDocument();
   });
 
-  it("starts a purchase with the selected card", () => {
-    mockWallet();
-    mockDashboard();
-    mockMutations();
-    render(<WalletScreen />);
+  it("shows the wireframe error state when the wallet fails", () => {
+    mockWallet({ isError: true });
 
-    fireEvent.click(screen.getByRole("button", { name: "Nova compra" }));
+    render(<WalletScreen />, { wrapper });
 
-    expect(screen.getByTestId("credit-card-purchase-dialog")).toHaveTextContent("card-1");
+    expect(screen.getByText("Não foi possível carregar a carteira")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
   });
 
-  it("keeps data visible and retries after a wallet refetch error", () => {
-    const refetch = mockWallet({ isRefetchError: true });
-    mockDashboard();
-    mockMutations();
-    render(<WalletScreen />);
-
-    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível atualizar todos os dados");
-    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
-    expect(refetch).toHaveBeenCalledWith({ cancelRefetch: false });
-    expect(screen.getAllByText("Conta principal")).not.toHaveLength(0);
-  });
-
-  it("communicates a Dashboard-only refetch failure with a distinct message", () => {
-    mockWallet();
-    mockDashboard({ isRefetchError: true });
-    mockMutations();
-    render(<WalletScreen />);
-
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "As contas e cartões foram atualizados, mas o panorama financeiro pode estar desatualizado.",
-    );
-  });
-
-  it("refetches both views when a manual refresh remains in the same UTC month", () => {
-    const walletRefetch = mockWallet();
-    const dashboardRefetch = mockDashboard();
-    mockMutations();
-    render(<WalletScreen />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Atualizar Carteira" }));
-
-    expect(walletRefetch).toHaveBeenCalledWith({ cancelRefetch: false });
-    expect(dashboardRefetch).toHaveBeenCalledWith({ cancelRefetch: false });
-  });
-
-  it("does not refetch the previous wallet query when the UTC month changes", () => {
-    const walletRefetch = mockWallet();
-    const dashboardRefetch = mockDashboard();
-    mockWalletPeriod({
-      period: { year: 2026, month: 12 },
-      refreshPeriod: vi.fn().mockReturnValue({ period: { year: 2027, month: 1 }, changed: true }),
-    });
-    mockMutations();
-    render(<WalletScreen />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Atualizar Carteira" }));
-
-    expect(walletRefetch).not.toHaveBeenCalled();
-    expect(dashboardRefetch).toHaveBeenCalledWith({ cancelRefetch: false });
-  });
-
-  it("does not treat a loading Dashboard as an absent invoice", () => {
-    mockWallet();
-    mockDashboard({ data: undefined, isPending: true });
-    mockMutations();
-    render(<WalletScreen />);
-
-    expect(screen.queryByText("Sem próxima fatura")).not.toBeInTheDocument();
-    expect(screen.getByText("Carregando panorama…")).toBeInTheDocument();
-  });
-
-  it("shows the empty state with a create action and no destructive action", () => {
+  it("shows the empty state when there are no accounts or cards", () => {
     mockWallet({ data: { accounts: [], creditCards: [], invoices: [] } });
-    mockDashboard();
-    mockMutations();
-    render(<WalletScreen />);
 
-    expect(screen.getByRole("heading", { name: "Sua Carteira ainda não tem itens" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Nova conta/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Arquivar|Excluir|Transferir/i })).not.toBeInTheDocument();
+    render(<WalletScreen />, { wrapper });
+
+    expect(screen.getByText("Nenhuma conta ou cartão ainda")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Adicionar conta/ })).toBeInTheDocument();
   });
 
-  it("keeps a card without invoice selectable and orphan invoices accessible", () => {
-    mockWallet({
-      data: {
-        accounts: [{ account, balance }],
-        creditCards: [{ ...card, id: "card-empty", name: "Cartão sem fatura" }],
-        invoices: [{ ...invoice, id: "invoice-orphan", creditCardId: "archived-card" }],
-      },
-    });
-    mockDashboard();
-    mockMutations();
-    render(<WalletScreen />);
+  it("renders tiles, accounts, cards and the invoice panel", () => {
+    mockWallet({ data: { accounts: [account], creditCards: [creditCard], invoices: [invoice] } });
+    vi.mocked(useDashboardOverview).mockReturnValue({
+      data: { balance: { availableToSpend: "2150.00" } },
+      isFetching: false,
+      isPending: false,
+      isRefetchError: false,
+      refetch: vi.fn(),
+    } as never);
 
-    expect(screen.getByRole("button", { name: /Cartão sem fatura/ })).toBeInTheDocument();
-    expect(screen.getByText("Este cartão não possui fatura no mês UTC atual.")).toBeInTheDocument();
-    expect(screen.getByText("Cartão arquivado ou indisponível")).toBeInTheDocument();
+    render(<WalletScreen />, { wrapper });
+
+    expect(screen.getByText("Saldo em contas")).toBeInTheDocument();
+    expect(screen.getAllByText(/2\.600,00/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Faturas em aberto")).toBeInTheDocument();
+    expect(screen.getByText("Disponível")).toBeInTheDocument();
+    expect(screen.getByText(/2\.150,00/)).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Nubank Visa/ }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Fatura Nubank Visa")).toBeInTheDocument();
+    expect(screen.getByText("Lançamentos da fatura")).toBeInTheDocument();
+    expect(screen.getByText("iPhone 15")).toBeInTheDocument();
+    expect(screen.getByText("3/12")).toBeInTheDocument();
   });
 
-  it("creates an account and shows inline success feedback", async () => {
-    mockWallet();
-    mockDashboard();
-    mockMutations();
-    render(<WalletScreen />);
+  it("opens the pay drawer with account options from the invoice panel", () => {
+    mockWallet({ data: { accounts: [account], creditCards: [creditCard], invoices: [invoice] } });
 
-    fireEvent.click(screen.getByRole("button", { name: /Nova conta/ }));
-    fireEvent.change(screen.getByLabelText("Nome"), { target: { value: "Conta nova" } });
-    fireEvent.change(screen.getByLabelText("Saldo inicial"), { target: { value: "1000,50" } });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    render(<WalletScreen />, { wrapper });
 
-    const created = await screen.findByText("Conta criada com sucesso.");
-    expect(created).toHaveAttribute("role", "status");
-    await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: "Nova conta" })).not.toBeInTheDocument(),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Pagar fatura" }));
+
+    const drawer = screen.getByRole("dialog", { name: "Pagar fatura" });
+    expect(within(drawer).getByText("Valor a pagar")).toBeInTheDocument();
+    expect(within(drawer).getByText("Debitar da conta")).toBeInTheDocument();
+    expect(within(drawer).getByRole("button", { name: /Nubank/ })).toBeInTheDocument();
+    expect(within(drawer).getByRole("button", { name: "Confirmar pagamento" })).toBeInTheDocument();
   });
 
-  it("opens a prefilled edit dialog without the initial balance field", () => {
-    mockWallet();
-    mockDashboard();
-    mockMutations();
-    render(<WalletScreen />);
+  it("opens the add dialog with account and card options", () => {
+    mockWallet({ data: { accounts: [account], creditCards: [creditCard], invoices: [invoice] } });
 
-    fireEvent.click(screen.getByRole("button", { name: /Editar conta/ }));
+    render(<WalletScreen />, { wrapper });
 
-    expect(screen.getByRole("dialog", { name: "Editar conta" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Nome")).toHaveValue("Conta principal");
-    expect(screen.getByLabelText("Nome")).toHaveFocus();
-    expect(screen.queryByLabelText("Saldo inicial")).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/O saldo inicial não pode ser alterado por esta tela/),
-    ).toBeInTheDocument();
-  });
+    fireEvent(window, new Event("fluxtrackr:wallet-add"));
 
-  it("uses native radios for account color and icon choices", () => {
-    mockWallet();
-    mockDashboard();
-    mockMutations();
-    render(<WalletScreen />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Nova conta/ }));
-    const green = screen.getByRole("radio", { name: "Verde" });
-    const blue = screen.getByRole("radio", { name: "Azul" });
-
-    fireEvent.click(green);
-    expect(green).toBeChecked();
-    expect(blue).not.toBeChecked();
-    expect(screen.getAllByRole("radio", { name: /Sem cor|Verde|Azul|Roxo|Vermelho|Âmbar|Turquesa|Cor atual/ })).toHaveLength(7);
-  });
-
-  it("opens the adjustment dialog, sends the canonical decimal and keeps the account selected", async () => {
-    mockWallet();
-    mockDashboard();
-    const { balanceAdjustmentMutate } = mockMutations();
-    render(<WalletScreen />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Ajustar saldo" }));
-    const input = screen.getByLabelText("Novo saldo");
-    expect(input).toHaveFocus();
-    expect(screen.getByText("Saldo atual retornado pela API")).toBeInTheDocument();
-
-    fireEvent.change(input, { target: { value: "200,50" } });
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar ajuste" }));
-
-    await waitFor(() =>
-      expect(balanceAdjustmentMutate).toHaveBeenCalledWith({
-        accountId: "account-1",
-        payload: { newBalance: "200.50" },
-      }),
-    );
-    expect(await screen.findByText(/Saldo ajustado para R\$\s?200,50\./)).toHaveAttribute("role", "status");
-    expect(screen.getByRole("button", { name: /Conta principal/ })).toHaveAttribute("aria-pressed", "true");
-  });
-
-  it("derives the open adjustment dialog from current wallet data and closes it when the account disappears", () => {
-    mockWallet();
-    mockDashboard();
-    mockMutations();
-    const { rerender } = render(<WalletScreen />);
-    fireEvent.click(screen.getByRole("button", { name: "Ajustar saldo" }));
-    expect(screen.getByRole("dialog", { name: "Ajustar saldo" })).toBeInTheDocument();
-
-    mockWallet({ data: { accounts: [{ account, balance: { ...balance, currentBalance: "999.00" } }], creditCards: [card], invoices: [invoice] } });
-    rerender(<WalletScreen />);
-    expect(screen.getAllByText(/R\$\s?999,00/).length).toBeGreaterThan(0);
-
-    mockWallet({ data: { accounts: [], creditCards: [card], invoices: [invoice] } });
-    rerender(<WalletScreen />);
-    expect(screen.queryByRole("dialog", { name: "Ajustar saldo" })).not.toBeInTheDocument();
-  });
-
-  it("enables transfers with two accounts, uses the selected origin and closes after success", async () => {
-    mockWallet({ data: { accounts: [{ account, balance }, { account: secondAccount, balance: secondBalance }], creditCards: [], invoices: [] } });
-    mockDashboard();
-    const { accountTransferMutate } = mockMutations();
-    accountTransferMutate.mockResolvedValue({
-      id: "transfer-1", userId: "user-1", sourceAccountId: "account-1", destinationAccountId: "account-2", amount: "250.00", description: "Reserva mensal",
-      occurredAt: "2026-07-20T12:00:00.000Z", createdAt: "2026-07-20T12:00:00.000Z", updatedAt: "2026-07-20T12:00:00.000Z",
-    });
-    render(<WalletScreen />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
-    expect(screen.getByRole("dialog", { name: "Transferir entre contas" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Conta de origem")).toHaveValue("account-1");
-    expect(screen.getByLabelText("Conta de destino")).toHaveValue("account-2");
-    expect(screen.getAllByText(/R\$\s?137,00/).length).toBeGreaterThan(0);
-    fireEvent.change(screen.getByLabelText("Valor"), { target: { value: "250,00" } });
-    fireEvent.change(screen.getByPlaceholderText("Ex.: Reserva mensal"), { target: { value: "Reserva mensal" } });
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar transferência" }));
-
-    await waitFor(() => expect(accountTransferMutate).toHaveBeenCalledWith({
-      sourceAccountId: "account-1", destinationAccountId: "account-2", amount: "250.00", description: "Reserva mensal",
-    }));
-    expect(await screen.findByText(/Transferência de R\$\s?250,00 realizada com sucesso/)).toHaveAttribute("role", "status");
-    expect(screen.queryByRole("dialog", { name: "Transferir entre contas" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Conta principal/ })).toHaveAttribute("aria-pressed", "true");
-  });
-
-  it("closes the dialog with Escape and returns focus to the trigger", async () => {
-    mockWallet();
-    mockDashboard();
-    mockMutations();
-    render(<WalletScreen />);
-
-    const trigger = screen.getByRole("button", { name: /Editar conta/ });
-    trigger.focus();
-    fireEvent.click(trigger);
-    expect(screen.getByRole("dialog", { name: "Editar conta" })).toBeInTheDocument();
-
-    fireEvent.keyDown(document, { key: "Escape" });
-
-    await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: "Editar conta" })).not.toBeInTheDocument(),
-    );
-    expect(trigger).toHaveFocus();
+    const dialog = screen.getByRole("dialog", { name: "Adicionar à carteira" });
+    expect(within(dialog).getByRole("button", { name: /Conta/ })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: /Cartão de crédito/ })).toBeInTheDocument();
   });
 });

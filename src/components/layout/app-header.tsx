@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, PanelLeft, Plus, RefreshCw, Search } from "lucide-react";
+import { ArrowLeftRight, ChevronDown, PanelLeft, Plus, RefreshCw, Search } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -13,13 +13,14 @@ import { useGlobalSearch } from "@/providers/search-provider";
 const searchPlaceholders: Record<string, string> = {
   "/transactions": "Buscar por descrição, valor ou categoria",
   "/timeline": "Buscar evento por descrição ou categoria",
+  "/wallet": "Buscar conta ou cartão",
 };
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Visão financeira", subtitle: "Início · dinheiro disponível e projeção" },
   "/timeline": { title: "Timeline", subtitle: "Seus eventos financeiros em ordem cronológica" },
   "/transactions": { title: "Transações", subtitle: "Registre, filtre e edite suas movimentações" },
-  "/wallet": { title: "Carteira", subtitle: "Contas, cartões e saldos" },
+  "/wallet": { title: "Carteira", subtitle: "Contas, cartões e faturas" },
   "/planning": { title: "Planejamento", subtitle: "Orçamentos por categoria" },
   "/categories": { title: "Categorias", subtitle: "Organização dos lançamentos" },
   "/notifications": { title: "Notificações", subtitle: "Alertas e avisos da conta" },
@@ -113,7 +114,27 @@ export function AppHeader({ onToggleSidebar, sidebarCollapsed }: AppHeaderProps)
         </button>
         <ThemeToggle />
         <NotificationButton />
-        {pathname.startsWith("/transactions") ? (
+        {pathname.startsWith("/wallet") ? (
+          <>
+            <button
+              className="header-period"
+              onClick={() => window.dispatchEvent(new Event("fluxtrackr:wallet-transfer"))}
+              style={{ cursor: "pointer" }}
+              type="button"
+            >
+              <ArrowLeftRight aria-hidden="true" color="var(--text-muted)" size={15} />
+              Transferir
+            </button>
+            <button
+              className="primary-cta"
+              onClick={() => window.dispatchEvent(new Event("fluxtrackr:wallet-add"))}
+              type="button"
+            >
+              <Plus aria-hidden="true" size={15} strokeWidth={2.4} />
+              Adicionar
+            </button>
+          </>
+        ) : pathname.startsWith("/transactions") ? (
           <button
             className="primary-cta"
             onClick={() => window.dispatchEvent(new Event("fluxtrackr:new-transaction"))}
