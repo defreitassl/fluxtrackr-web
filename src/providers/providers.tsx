@@ -1,6 +1,7 @@
 "use client";
 
 import { QueryProvider } from "@/providers/query-provider";
+import { SearchProvider } from "@/providers/search-provider";
 import { SessionProvider } from "@/providers/session-provider";
 import { type Theme, ThemeProvider } from "@/providers/theme-provider";
 
@@ -12,7 +13,9 @@ export function Providers({ children, initialTheme }: ProvidersProps) {
   return (
     <ThemeProvider initialTheme={initialTheme}>
       <QueryProvider>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <SearchProvider>{children}</SearchProvider>
+        </SessionProvider>
       </QueryProvider>
     </ThemeProvider>
   );

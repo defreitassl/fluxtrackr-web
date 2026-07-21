@@ -8,11 +8,17 @@ import { useEffect, useRef } from "react";
 
 import { NotificationButton } from "@/components/layout/notification-button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { useGlobalSearch } from "@/providers/search-provider";
+
+const searchPlaceholders: Record<string, string> = {
+  "/transactions": "Buscar por descrição, valor ou categoria",
+  "/timeline": "Buscar evento por descrição ou categoria",
+};
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Visão financeira", subtitle: "Início · dinheiro disponível e projeção" },
   "/timeline": { title: "Timeline", subtitle: "Seus eventos financeiros em ordem cronológica" },
-  "/transactions": { title: "Transações", subtitle: "Lançamentos do período" },
+  "/transactions": { title: "Transações", subtitle: "Registre, filtre e edite suas movimentações" },
   "/wallet": { title: "Carteira", subtitle: "Contas, cartões e saldos" },
   "/planning": { title: "Planejamento", subtitle: "Orçamentos por categoria" },
   "/categories": { title: "Categorias", subtitle: "Organização dos lançamentos" },
@@ -41,7 +47,11 @@ export function AppHeader({ onToggleSidebar, sidebarCollapsed }: AppHeaderProps)
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const searchRef = useRef<HTMLInputElement>(null);
+  const { query, setQuery } = useGlobalSearch();
   const { title, subtitle } = getPageTitle(pathname);
+  const searchPlaceholder =
+    Object.entries(searchPlaceholders).find(([route]) => pathname.startsWith(route))?.[1] ??
+    "Buscar transações, contas ou categorias";
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -75,7 +85,13 @@ export function AppHeader({ onToggleSidebar, sidebarCollapsed }: AppHeaderProps)
 
       <label className="header-search">
         <Search aria-hidden="true" size={15} />
-        <input placeholder="Buscar transações, contas ou categorias" ref={searchRef} type="search" />
+        <input
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={searchPlaceholder}
+          ref={searchRef}
+          type="search"
+          value={query}
+        />
         <span className="header-kbd" aria-hidden="true">
           Ctrl /
         </span>
@@ -97,10 +113,21 @@ export function AppHeader({ onToggleSidebar, sidebarCollapsed }: AppHeaderProps)
         </button>
         <ThemeToggle />
         <NotificationButton />
-        <Link className="primary-cta" href="/transactions">
-          <Plus aria-hidden="true" size={15} strokeWidth={2.4} />
-          Nova movimentação
-        </Link>
+        {pathname.startsWith("/transactions") ? (
+          <button
+            className="primary-cta"
+            onClick={() => window.dispatchEvent(new Event("fluxtrackr:new-transaction"))}
+            type="button"
+          >
+            <Plus aria-hidden="true" size={15} strokeWidth={2.4} />
+            Nova movimentação
+          </button>
+        ) : (
+          <Link className="primary-cta" href="/transactions">
+            <Plus aria-hidden="true" size={15} strokeWidth={2.4} />
+            Nova movimentação
+          </Link>
+        )}
       </div>
     </header>
   );
