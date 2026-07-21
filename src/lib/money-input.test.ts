@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeDecimalInput, parseFiniteMoneyNumber } from "@/lib/money-input";
+import { isDecimal12_2, normalizeDecimalInput, parseFiniteMoneyNumber } from "@/lib/money-input";
 
 describe("normalizeDecimalInput", () => {
   it.each([
@@ -20,6 +20,20 @@ describe("normalizeDecimalInput", () => {
       expect(normalizeDecimalInput(input)).toBe("");
     },
   );
+
+  it("keeps allowed leading zeros while returning a canonical value", () => {
+    expect(normalizeDecimalInput("00042,50")).toBe("42.50");
+  });
+});
+
+describe("isDecimal12_2", () => {
+  it.each(["9999999999.99", "-9999999999.99", "0", "0000.50"])("accepts %s", (value) => {
+    expect(isDecimal12_2(value)).toBe(true);
+  });
+
+  it.each(["10000000000", "-10000000000", "1.001", "1e3", "Infinity", "NaN"])("rejects %s", (value) => {
+    expect(isDecimal12_2(value)).toBe(false);
+  });
 });
 
 describe("parseFiniteMoneyNumber", () => {
@@ -27,5 +41,6 @@ describe("parseFiniteMoneyNumber", () => {
     expect(parseFiniteMoneyNumber(" -250,75 ")).toBe(-250.75);
     expect(Number.isNaN(parseFiniteMoneyNumber("9".repeat(500)))).toBe(true);
     expect(Number.isNaN(parseFiniteMoneyNumber("texto"))).toBe(true);
+    expect(Number.isNaN(parseFiniteMoneyNumber("10000000000"))).toBe(true);
   });
 });

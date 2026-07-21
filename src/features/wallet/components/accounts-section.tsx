@@ -15,6 +15,7 @@ type AccountsSectionProps = {
   onCreateAccount: () => void;
   onAdjustAccount: (walletAccount: WalletAccount) => void;
   onEditAccount: (account: Account) => void;
+  onTransferAccount: (account: Account) => void;
 };
 
 export function AccountsSection({
@@ -25,6 +26,7 @@ export function AccountsSection({
   onCreateAccount,
   onAdjustAccount,
   onEditAccount,
+  onTransferAccount,
 }: AccountsSectionProps) {
   return (
     <section className="wallet-section wallet-accounts-section" aria-labelledby="wallet-accounts-title">
@@ -62,8 +64,10 @@ export function AccountsSection({
             ))}
           </ul>
           <AccountDetails
+            accounts={accounts}
             onAdjust={onAdjustAccount}
             onEdit={onEditAccount}
+            onTransfer={onTransferAccount}
             walletAccount={selectedAccount}
           />
         </div>

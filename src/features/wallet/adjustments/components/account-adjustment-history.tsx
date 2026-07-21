@@ -14,11 +14,11 @@ export function AccountAdjustmentHistory({ accountId }: AccountAdjustmentHistory
   const [showAll, setShowAll] = useState(false);
   const history = useAccountBalanceAdjustments(accountId);
 
-  if (history.isPending) {
+  if (history.isPending && !history.data) {
     return <p className="adjustment-history-loading">Carregando histórico de ajustes…</p>;
   }
 
-  if (history.isError) {
+  if (history.isLoadingError || (history.isError && !history.data)) {
     return (
       <div className="adjustment-history-error" role="alert">
         <p>Não foi possível carregar o histórico de ajustes.</p>
@@ -38,6 +38,17 @@ export function AccountAdjustmentHistory({ accountId }: AccountAdjustmentHistory
 
   return (
     <div className="adjustment-history">
+      {history.isRefetching && !history.isRefetchError ? (
+        <p className="history-refreshing" role="status">Atualizando histórico…</p>
+      ) : null}
+      {history.isRefetchError ? (
+        <div className="history-refetch-alert" role="alert">
+          <span>Não foi possível atualizar o histórico. Os dados exibidos podem estar desatualizados.</span>
+          <button className="secondary-button" onClick={() => void history.refetch()} type="button">
+            Tentar novamente
+          </button>
+        </div>
+      ) : null}
       <ul aria-label="Histórico de ajustes">
         {visibleAdjustments.map((adjustment) => (
           <li key={adjustment.id}>

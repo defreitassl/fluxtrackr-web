@@ -127,7 +127,7 @@ A Carteira permite **criar** e **editar metadados** de contas:
   comunicado por feedback inline com `role="status"`.
 - **Arquivamento fora do escopo:** a API atual apenas define `isActive=false` e
   ainda não possui política consolidada para dependências ativas, então nenhuma
-  ação de arquivar/excluir/transferir é exposta.
+  ação de arquivar ou excluir é exposta.
 
 ### Ajuste de saldo e histórico
 
@@ -142,7 +142,30 @@ O histórico usa `GET /accounts/{accountId}/balance-adjustments`, preserva a
 ordem da API e exibe inicialmente até cinco itens. Depois de um ajuste, a
 mutation invalida `['account-balance-adjustments', accountId]`,
 `['wallet-overview']`, `['dashboard-overview']` e `['financial-timeline']`.
-Transferências e arquivamento continuam fora deste recorte.
+
+Em erro de atualização, o histórico preserva a lista, exibe um alerta local e
+permite tentar novamente; carregamentos de atualização também são discretos e
+não substituem os dados. O estado de “Mostrar todos” é isolado por conta.
+
+### Transferências entre contas
+
+O detalhe da conta oferece **Transferir** quando há duas ou mais contas ativas.
+O diálogo envia somente `sourceAccountId`, `destinationAccountId`, `amount`
+decimal canônico positivo e `description` opcional a `POST /account-transfers`;
+não envia `occurredAt`, não compara saldo disponível e não calcula saldos.
+Transferência não é receita nem despesa e não cria `Transaction`.
+
+`GET /account-transfers?accountId=` alimenta o histórico da conta selecionada
+pela chave `['account-transfers', { accountId }]`. Ele preserva a ordem da API,
+mostra até cinco itens inicialmente e identifica cada item como enviada ou
+recebida, com a conta oposta ou o fallback para conta indisponível. Após sucesso
+a mutation invalida `['account-transfers']`, `['wallet-overview']`,
+`['dashboard-overview']` e `['financial-timeline']`; não há update otimista.
+
+Entradas monetárias da criação de conta, ajuste e transferência aceitam vírgula
+ou ponto, mas normalizam para `Decimal(12,2)` (`-9.999.999.999,99` a
+`9.999.999.999,99`) antes de enviar. O Web continua somente apresentando os
+saldos retornados pela API.
 
 ## Validação local integrada
 

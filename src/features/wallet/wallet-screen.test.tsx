@@ -8,6 +8,8 @@ vi.mock("@/features/wallet/accounts/mutations/use-create-account", () => ({ useC
 vi.mock("@/features/wallet/accounts/mutations/use-update-account", () => ({ useUpdateAccount: vi.fn() }));
 vi.mock("@/features/wallet/adjustments/mutations/use-create-balance-adjustment", () => ({ useCreateBalanceAdjustment: vi.fn() }));
 vi.mock("@/features/wallet/adjustments/queries/use-account-balance-adjustments", () => ({ useAccountBalanceAdjustments: vi.fn() }));
+vi.mock("@/features/wallet/transfers/mutations/use-create-account-transfer", () => ({ useCreateAccountTransfer: vi.fn() }));
+vi.mock("@/features/wallet/transfers/queries/use-account-transfers", () => ({ useAccountTransfers: vi.fn() }));
 
 import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
 import { useCurrentWalletPeriod } from "@/features/wallet/hooks/use-current-wallet-period";
@@ -15,6 +17,8 @@ import { useCreateAccount } from "@/features/wallet/accounts/mutations/use-creat
 import { useUpdateAccount } from "@/features/wallet/accounts/mutations/use-update-account";
 import { useCreateBalanceAdjustment } from "@/features/wallet/adjustments/mutations/use-create-balance-adjustment";
 import { useAccountBalanceAdjustments } from "@/features/wallet/adjustments/queries/use-account-balance-adjustments";
+import { useCreateAccountTransfer } from "@/features/wallet/transfers/mutations/use-create-account-transfer";
+import { useAccountTransfers } from "@/features/wallet/transfers/queries/use-account-transfers";
 import { useWalletOverview } from "@/features/wallet/queries/use-wallet-overview";
 import { WalletScreen } from "@/features/wallet/wallet-screen";
 
@@ -29,6 +33,19 @@ const account = {
 const balance = {
   accountId: "account-1", asOf: "2026-07-20T23:30:00.000Z", initialBalance: "100.00", income: "50.00",
   expense: "20.00", incomingTransfers: "10.00", outgoingTransfers: "5.00", adjustments: "2.00", currentBalance: "137.00",
+};
+
+const secondAccount = {
+  ...account,
+  id: "account-2",
+  name: "Conta reserva",
+  initialBalance: "50.00",
+};
+
+const secondBalance = {
+  ...balance,
+  accountId: "account-2",
+  currentBalance: "50.00",
 };
 
 const card = {
@@ -59,6 +76,7 @@ function mockWallet(overrides: Record<string, unknown> = {}) {
   } as never);
   mockWalletPeriod();
   mockAdjustmentHistory();
+  mockTransferHistory();
   return refetch;
 }
 
@@ -92,6 +110,18 @@ function mockAdjustmentHistory(overrides: Record<string, unknown> = {}) {
   } as never);
 }
 
+function mockTransferHistory(overrides: Record<string, unknown> = {}) {
+  vi.mocked(useAccountTransfers).mockReturnValue({
+    data: [],
+    isPending: false,
+    isError: false,
+    isRefetching: false,
+    isRefetchError: false,
+    refetch: vi.fn(),
+    ...overrides,
+  } as never);
+}
+
 function mockMutations() {
   vi.mocked(useCreateAccount).mockReturnValue({
     mutateAsync: vi.fn().mockResolvedValue({ ...account, id: "account-new", name: "Conta nova" }),
@@ -110,7 +140,13 @@ function mockMutations() {
     isPending: false,
     reset: vi.fn(),
   } as never);
-  return { balanceAdjustmentMutate };
+  const accountTransferMutate = vi.fn();
+  vi.mocked(useCreateAccountTransfer).mockReturnValue({
+    mutateAsync: accountTransferMutate,
+    isPending: false,
+    reset: vi.fn(),
+  } as never);
+  return { balanceAdjustmentMutate, accountTransferMutate };
 }
 
 describe("WalletScreen", () => {
@@ -126,7 +162,8 @@ describe("WalletScreen", () => {
     expect(screen.getByText("Compras do cartão")).toBeInTheDocument();
     expect(screen.getByText(/20 de jul. de 2026, 23:30 UTC/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Conta principal/ })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.queryByRole("button", { name: /Pagar fatura|Transferir|Arquivar|Excluir/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Transferir" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /Pagar fatura|Arquivar|Excluir/i })).not.toBeInTheDocument();
   });
 
   it("keeps data visible and retries after a wallet refetch error", () => {
@@ -290,6 +327,50 @@ describe("WalletScreen", () => {
       }),
     );
     expect(await screen.findByText(/Saldo ajustado para R\$\s?200,50\./)).toHaveAttribute("role", "status");
+    expect(screen.getByRole("button", { name: /Conta principal/ })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("derives the open adjustment dialog from current wallet data and closes it when the account disappears", () => {
+    mockWallet();
+    mockDashboard();
+    mockMutations();
+    const { rerender } = render(<WalletScreen />);
+    fireEvent.click(screen.getByRole("button", { name: "Ajustar saldo" }));
+    expect(screen.getByRole("dialog", { name: "Ajustar saldo" })).toBeInTheDocument();
+
+    mockWallet({ data: { accounts: [{ account, balance: { ...balance, currentBalance: "999.00" } }], creditCards: [card], invoices: [invoice] } });
+    rerender(<WalletScreen />);
+    expect(screen.getAllByText(/R\$\s?999,00/).length).toBeGreaterThan(0);
+
+    mockWallet({ data: { accounts: [], creditCards: [card], invoices: [invoice] } });
+    rerender(<WalletScreen />);
+    expect(screen.queryByRole("dialog", { name: "Ajustar saldo" })).not.toBeInTheDocument();
+  });
+
+  it("enables transfers with two accounts, uses the selected origin and closes after success", async () => {
+    mockWallet({ data: { accounts: [{ account, balance }, { account: secondAccount, balance: secondBalance }], creditCards: [], invoices: [] } });
+    mockDashboard();
+    const { accountTransferMutate } = mockMutations();
+    accountTransferMutate.mockResolvedValue({
+      id: "transfer-1", userId: "user-1", sourceAccountId: "account-1", destinationAccountId: "account-2", amount: "250.00", description: "Reserva mensal",
+      occurredAt: "2026-07-20T12:00:00.000Z", createdAt: "2026-07-20T12:00:00.000Z", updatedAt: "2026-07-20T12:00:00.000Z",
+    });
+    render(<WalletScreen />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Transferir" }));
+    expect(screen.getByRole("dialog", { name: "Transferir entre contas" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Conta de origem")).toHaveValue("account-1");
+    expect(screen.getByLabelText("Conta de destino")).toHaveValue("account-2");
+    expect(screen.getAllByText(/R\$\s?137,00/).length).toBeGreaterThan(0);
+    fireEvent.change(screen.getByLabelText("Valor"), { target: { value: "250,00" } });
+    fireEvent.change(screen.getByPlaceholderText("Ex.: Reserva mensal"), { target: { value: "Reserva mensal" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar transferência" }));
+
+    await waitFor(() => expect(accountTransferMutate).toHaveBeenCalledWith({
+      sourceAccountId: "account-1", destinationAccountId: "account-2", amount: "250.00", description: "Reserva mensal",
+    }));
+    expect(await screen.findByText(/Transferência de R\$\s?250,00 realizada com sucesso/)).toHaveAttribute("role", "status");
+    expect(screen.queryByRole("dialog", { name: "Transferir entre contas" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Conta principal/ })).toHaveAttribute("aria-pressed", "true");
   });
 

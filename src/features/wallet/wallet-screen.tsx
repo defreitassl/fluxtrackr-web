@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { Account, CreateBalanceAdjustmentResponse } from "@/api/generated/client";
+import type { Account, AccountTransfer, CreateBalanceAdjustmentResponse } from "@/api/generated/client";
 import { ErrorState } from "@/components/ui/error-state";
 import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
 import { CreateAccountDialog } from "@/features/wallet/accounts/components/create-account-dialog";
 import { EditAccountDialog } from "@/features/wallet/accounts/components/edit-account-dialog";
 import { BalanceAdjustmentDialog } from "@/features/wallet/adjustments/components/balance-adjustment-dialog";
+import { AccountTransferDialog } from "@/features/wallet/transfers/components/account-transfer-dialog";
 import type { WalletAccount } from "@/features/wallet/api/get-wallet-overview";
 import { AccountsSection } from "@/features/wallet/components/accounts-section";
 import { CreditCardsSection } from "@/features/wallet/components/credit-cards-section";
@@ -33,7 +34,8 @@ export function WalletScreen() {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [adjustingAccount, setAdjustingAccount] = useState<WalletAccount | null>(null);
+  const [adjustingAccountId, setAdjustingAccountId] = useState<string | null>(null);
+  const [transferringAccountId, setTransferringAccountId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -52,6 +54,8 @@ export function WalletScreen() {
 
   const selectedAccount =
     data?.accounts.find(({ account }) => account.id === selectedAccountId) ?? data?.accounts[0];
+  const adjustingAccount = data?.accounts.find(({ account }) => account.id === adjustingAccountId);
+  const transferringAccount = data?.accounts.find(({ account }) => account.id === transferringAccountId);
 
   const cardSelection = useMemo(
     () =>
@@ -115,7 +119,12 @@ export function WalletScreen() {
 
   const handleAdjustAccount = (walletAccount: WalletAccount) => {
     setSuccessMessage(null);
-    setAdjustingAccount(walletAccount);
+    setAdjustingAccountId(walletAccount.account.id);
+  };
+
+  const handleTransferAccount = (account: Account) => {
+    setSuccessMessage(null);
+    setTransferringAccountId(account.id);
   };
 
   const handleAccountCreated = (account: Account) => {
@@ -132,8 +141,14 @@ export function WalletScreen() {
 
   const handleBalanceAdjusted = (response: CreateBalanceAdjustmentResponse) => {
     setSelectedAccountId(response.adjustment.accountId);
-    setAdjustingAccount(null);
+    setAdjustingAccountId(null);
     showSuccess(`Saldo ajustado para ${formatCurrency(response.currentBalance)}.`);
+  };
+
+  const handleTransferred = (transfer: AccountTransfer) => {
+    setSelectedAccountId(transfer.sourceAccountId);
+    setTransferringAccountId(null);
+    showSuccess(`Transferência de ${formatCurrency(transfer.amount)} realizada com sucesso.`);
   };
 
   const isWalletEmpty = data
@@ -185,6 +200,7 @@ export function WalletScreen() {
                 onCreateAccount={handleCreateAccount}
                 onEditAccount={handleEditAccount}
                 onSelectAccount={setSelectedAccountId}
+                onTransferAccount={handleTransferAccount}
                 selectedAccount={selectedAccount}
                 successMessage={successMessage}
               />
@@ -224,7 +240,16 @@ export function WalletScreen() {
           account={adjustingAccount.account}
           currentBalance={adjustingAccount.balance.currentBalance}
           onAdjusted={handleBalanceAdjusted}
-          onClose={() => setAdjustingAccount(null)}
+          onClose={() => setAdjustingAccountId(null)}
+          open
+        />
+      ) : null}
+      {transferringAccount ? (
+        <AccountTransferDialog
+          accounts={data?.accounts ?? []}
+          initialSourceAccountId={transferringAccount.account.id}
+          onClose={() => setTransferringAccountId(null)}
+          onTransferred={handleTransferred}
           open
         />
       ) : null}

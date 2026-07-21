@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/features/wallet/adjustments/queries/use-account-balance-adjustments", () => ({
@@ -9,6 +9,7 @@ import { AccountAdjustmentHistory } from "@/features/wallet/adjustments/componen
 import { useAccountBalanceAdjustments } from "@/features/wallet/adjustments/queries/use-account-balance-adjustments";
 
 afterEach(() => {
+  cleanup();
   vi.resetAllMocks();
 });
 
@@ -25,7 +26,7 @@ const base = {
 
 function mockHistory(overrides: Record<string, unknown>) {
   vi.mocked(useAccountBalanceAdjustments).mockReturnValue({
-    data: [],
+    data: undefined,
     isPending: false,
     isError: false,
     refetch: vi.fn(),
@@ -69,5 +70,16 @@ describe("AccountAdjustmentHistory", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mostrar todos" }));
     expect(screen.getAllByRole("listitem")).toHaveLength(6);
     expect(screen.getByRole("button", { name: "Mostrar menos" })).toBeInTheDocument();
+  });
+
+  it("preserves stale data and lets the user retry a refetch error", () => {
+    const refetch = vi.fn();
+    mockHistory({ data: [{ ...base, id: "adjustment-1" }], isError: true, isRefetchError: true, refetch });
+    render(<AccountAdjustmentHistory accountId="account-1" />);
+
+    expect(screen.getAllByText("Conferência").length).toBeGreaterThan(0);
+    expect(screen.getByRole("alert")).toHaveTextContent("Os dados exibidos podem estar desatualizados");
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(refetch).toHaveBeenCalled();
   });
 });

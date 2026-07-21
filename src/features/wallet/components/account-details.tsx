@@ -1,18 +1,21 @@
-import { Pencil, SlidersHorizontal } from "lucide-react";
+import { ArrowLeftRight, Pencil, SlidersHorizontal } from "lucide-react";
 
 import type { Account } from "@/api/generated/client";
 import { AccountAdjustmentHistory } from "@/features/wallet/adjustments/components/account-adjustment-history";
+import { AccountTransferHistory } from "@/features/wallet/transfers/components/account-transfer-history";
 import type { WalletAccount } from "@/features/wallet/api/get-wallet-overview";
 import { formatUtcDateTime } from "@/features/wallet/lib/wallet-presentation";
 import { formatCurrency } from "@/lib/format";
 
 type AccountDetailsProps = {
   walletAccount: WalletAccount | undefined;
+  accounts: WalletAccount[];
   onAdjust: (walletAccount: WalletAccount) => void;
   onEdit: (account: Account) => void;
+  onTransfer: (account: Account) => void;
 };
 
-export function AccountDetails({ onAdjust, onEdit, walletAccount }: AccountDetailsProps) {
+export function AccountDetails({ accounts, onAdjust, onEdit, onTransfer, walletAccount }: AccountDetailsProps) {
   if (!walletAccount) {
     return null;
   }
@@ -26,6 +29,7 @@ export function AccountDetails({ onAdjust, onEdit, walletAccount }: AccountDetai
     ["Transferências enviadas", balance.outgoingTransfers],
     ["Ajustes", balance.adjustments],
   ] as const;
+  const canTransfer = accounts.length >= 2;
 
   return (
     <aside className="wallet-detail-panel" aria-labelledby="account-detail-title">
@@ -35,10 +39,17 @@ export function AccountDetails({ onAdjust, onEdit, walletAccount }: AccountDetai
           <h3 id="account-detail-title">{account.name}</h3>
         </div>
         <div className="wallet-detail-actions">
-          <button className="secondary-button" onClick={() => onEdit(account)} type="button">
-            <Pencil aria-hidden="true" size={15} />
-            Editar conta
+          <button
+            aria-describedby={canTransfer ? undefined : "account-transfer-unavailable"}
+            className="secondary-button wallet-transfer-action"
+            disabled={!canTransfer}
+            onClick={() => onTransfer(account)}
+            type="button"
+          >
+            <ArrowLeftRight aria-hidden="true" size={15} />
+            Transferir
           </button>
+          {!canTransfer ? <span className="sr-only" id="account-transfer-unavailable">Cadastre outra conta para realizar transferências.</span> : null}
           <button
             className="secondary-button wallet-adjustment-action"
             onClick={() => onAdjust(walletAccount)}
@@ -46,6 +57,10 @@ export function AccountDetails({ onAdjust, onEdit, walletAccount }: AccountDetai
           >
             <SlidersHorizontal aria-hidden="true" size={15} />
             Ajustar saldo
+          </button>
+          <button className="secondary-button" onClick={() => onEdit(account)} type="button">
+            <Pencil aria-hidden="true" size={15} />
+            Editar conta
           </button>
         </div>
       </div>
@@ -64,6 +79,10 @@ export function AccountDetails({ onAdjust, onEdit, walletAccount }: AccountDetai
           <dd>{formatCurrency(balance.currentBalance)}</dd>
         </div>
       </dl>
+      <section className="adjustment-history-section" aria-labelledby="account-transfer-history-title">
+        <h4 id="account-transfer-history-title">Histórico de transferências</h4>
+        <AccountTransferHistory accountId={account.id} accounts={accounts.map(({ account }) => account)} key={account.id} />
+      </section>
       <section className="adjustment-history-section" aria-labelledby="account-adjustment-history-title">
         <h4 id="account-adjustment-history-title">Histórico de ajustes</h4>
         <AccountAdjustmentHistory accountId={account.id} key={account.id} />

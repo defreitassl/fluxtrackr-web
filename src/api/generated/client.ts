@@ -20,12 +20,12 @@ export type DateTime = string;
 export type Date = string;
 
 /**
- * @pattern ^-?\\d+\\.\\d{2}$
+ * @pattern ^-?\\d{1,10}\\.\\d{2}$
  */
 export type Money = string;
 
 /**
- * @pattern ^(?!0+\\.00$)\\d+\\.\\d{2}$
+ * @pattern ^(?!0+\\.00$)\\d{1,10}\\.\\d{2}$
  */
 export type PositiveMoney = string;
 
@@ -423,6 +423,10 @@ export interface CreateAccountRequest {
   color?: string;
   /** @minLength 1 */
   icon?: string;
+  /**
+     * @minimum -9999999999.99
+     * @maximum 9999999999.99
+     */
   initialBalance: number;
   isActive?: boolean;
 }
@@ -469,7 +473,6 @@ export interface CreateAccountTransferRequest {
   amount: PositiveMoney;
   /** @minLength 1 */
   description?: string;
-  occurredAt?: Date;
 }
 
 export interface AccountBalanceAdjustment {
