@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftRight, ChevronDown, PanelLeft, Plus, RefreshCw, Search } from "lucide-react";
+import { ArrowLeftRight, ChevronDown, MailOpen, PanelLeft, Plus, RefreshCw, Search } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -16,6 +16,7 @@ const searchPlaceholders: Record<string, string> = {
   "/wallet": "Buscar conta ou cartão",
   "/planning": "Buscar orçamento por categoria",
   "/categories": "Buscar categoria",
+  "/notifications": "Buscar notificação ou atividade",
 };
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
@@ -31,7 +32,10 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
     title: "Categorias",
     subtitle: "Organize suas receitas e despesas com ícones e cores",
   },
-  "/notifications": { title: "Notificações", subtitle: "Alertas e avisos da conta" },
+  "/notifications": {
+    title: "Central",
+    subtitle: "Notificações financeiras e histórico de atividades",
+  },
   "/settings": { title: "Configurações", subtitle: "Preferências da conta" },
 };
 
@@ -142,6 +146,15 @@ export function AppHeader({ onToggleSidebar, sidebarCollapsed }: AppHeaderProps)
               Adicionar
             </button>
           </>
+        ) : pathname.startsWith("/notifications") ? (
+          <button
+            className="primary-cta"
+            onClick={() => window.dispatchEvent(new Event("fluxtrackr:notifications-read-all"))}
+            type="button"
+          >
+            <MailOpen aria-hidden="true" size={15} strokeWidth={2.2} />
+            Marcar todas como lidas
+          </button>
         ) : pathname.startsWith("/planning") ? (
           <button
             className="primary-cta"

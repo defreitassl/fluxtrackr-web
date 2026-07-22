@@ -1,16 +1,19 @@
-import { Settings2 } from "lucide-react";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { ScreenPlaceholder } from "@/features/placeholders/screen-placeholder";
+import { SettingsScreen } from "@/features/settings/settings-screen";
+import { getSessionIdentity } from "@/lib/session";
 
-export const metadata = { title: "Configurações" };
+export const metadata: Metadata = {
+  title: "Configurações",
+};
 
-export default function SettingsPage() {
-  return (
-    <ScreenPlaceholder
-      description="Preferências de uso e configurações da sua experiência no FluxTrackr."
-      eyebrow="Conta"
-      icon={Settings2}
-      title="Configurações"
-    />
-  );
+export default async function SettingsPage() {
+  const session = await getSessionIdentity();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  return <SettingsScreen email={session.email} />;
 }

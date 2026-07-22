@@ -1,16 +1,11 @@
-import { Bell } from "lucide-react";
+import type { Metadata } from "next";
 
-import { ScreenPlaceholder } from "@/features/placeholders/screen-placeholder";
+import { NotificationsScreen } from "@/features/notifications/notifications-screen";
 
-export const metadata = { title: "Notificações" };
+export const metadata: Metadata = {
+  title: "Notificações",
+};
 
 export default function NotificationsPage() {
-  return (
-    <ScreenPlaceholder
-      description="Alertas e atividades persistidos pela API, organizados em uma central."
-      eyebrow="Conta"
-      icon={Bell}
-      title="Notificações"
-    />
-  );
+  return <NotificationsScreen />;
 }
