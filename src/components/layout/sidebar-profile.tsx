@@ -3,11 +3,13 @@
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { useMe } from "@/features/settings/queries/use-me";
+
 type SidebarProfileProps = {
   email: string;
 };
 
-function getDisplayName(email: string) {
+function fallbackName(email: string) {
   const localPart = email.split("@")[0] ?? email;
   return localPart
     .split(/[._-]+/)
@@ -25,16 +27,35 @@ function getInitials(name: string) {
 
 export function SidebarProfile({ email }: SidebarProfileProps) {
   const router = useRouter();
-  const name = getDisplayName(email);
+  const { data: me } = useMe();
+  const name = me?.name ?? fallbackName(email);
 
-  async function logout() {
+  async function logout(event: React.MouseEvent) {
+    event.stopPropagation();
     await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
     router.replace("/login");
     router.refresh();
   }
 
+  function openProfile() {
+    router.push("/settings");
+  }
+
   return (
-    <div className="sidebar-profile">
+    <div
+      aria-label="Abrir perfil e configurações"
+      className="sidebar-profile"
+      onClick={openProfile}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openProfile();
+        }
+      }}
+      role="link"
+      style={{ cursor: "pointer" }}
+      tabIndex={0}
+    >
       <span className="profile-avatar" aria-hidden="true">
         {getInitials(name)}
       </span>

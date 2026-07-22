@@ -52,6 +52,35 @@ export interface AccessToken {
   accessToken: string;
 }
 
+export interface Me {
+  id: Uuid;
+  name: string;
+  email: string;
+  createdAt: DateTime;
+}
+
+export interface UpdateMeRequest {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+}
+
+export interface ChangePasswordRequest {
+  /** @minLength 1 */
+  currentPassword: string;
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  newPassword: string;
+}
+
+export interface PasswordUpdated {
+  updated: true;
+}
+
 export interface LoginRequest {
   email: string;
   /** @minLength 1 */
@@ -2651,6 +2680,160 @@ export const archiveCategory = async (id: string, options?: RequestInit): Promis
     method: 'DELETE'
 
 
+  }
+);}
+
+
+
+export type getMeResponse200 = {
+  data: Me
+  status: 200
+}
+
+export type getMeResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getMeResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type getMeResponseSuccess = (getMeResponse200) & {
+  headers: Headers;
+};
+export type getMeResponseError = (getMeResponse401 | getMeResponse500) & {
+  headers: Headers;
+};
+
+export type getMeResponse = (getMeResponseSuccess | getMeResponseError)
+
+export const getGetMeUrl = () => {
+
+
+
+
+  return `/me`
+}
+
+/**
+ * @summary Dados do usuário autenticado
+ */
+export const getMe = async ( options?: RequestInit): Promise<getMeResponse> => {
+
+  return apiFetch<getMeResponse>(getGetMeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateMeResponse200 = {
+  data: Me
+  status: 200
+}
+
+export type updateMeResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type updateMeResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateMeResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type updateMeResponseSuccess = (updateMeResponse200) & {
+  headers: Headers;
+};
+export type updateMeResponseError = (updateMeResponse400 | updateMeResponse401 | updateMeResponse500) & {
+  headers: Headers;
+};
+
+export type updateMeResponse = (updateMeResponseSuccess | updateMeResponseError)
+
+export const getUpdateMeUrl = () => {
+
+
+
+
+  return `/me`
+}
+
+/**
+ * @summary Atualiza o nome do usuário autenticado
+ */
+export const updateMe = async (updateMeRequest: UpdateMeRequest, options?: RequestInit): Promise<updateMeResponse> => {
+
+  return apiFetch<updateMeResponse>(getUpdateMeUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateMeRequest)
+  }
+);}
+
+
+
+export type changePasswordResponse200 = {
+  data: PasswordUpdated
+  status: 200
+}
+
+export type changePasswordResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type changePasswordResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type changePasswordResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type changePasswordResponseSuccess = (changePasswordResponse200) & {
+  headers: Headers;
+};
+export type changePasswordResponseError = (changePasswordResponse400 | changePasswordResponse401 | changePasswordResponse500) & {
+  headers: Headers;
+};
+
+export type changePasswordResponse = (changePasswordResponseSuccess | changePasswordResponseError)
+
+export const getChangePasswordUrl = () => {
+
+
+
+
+  return `/me/password`
+}
+
+/**
+ * @summary Troca a senha do usuário autenticado
+ */
+export const changePassword = async (changePasswordRequest: ChangePasswordRequest, options?: RequestInit): Promise<changePasswordResponse> => {
+
+  return apiFetch<changePasswordResponse>(getChangePasswordUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(changePasswordRequest)
   }
 );}
 

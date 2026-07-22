@@ -36,7 +36,7 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
     title: "Central",
     subtitle: "Notificações financeiras e histórico de atividades",
   },
-  "/settings": { title: "Configurações", subtitle: "Preferências da conta" },
+  "/settings": { title: "Perfil", subtitle: "Conta e preferências" },
 };
 
 function getPageTitle(pathname: string) {
