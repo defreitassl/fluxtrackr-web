@@ -43,3 +43,18 @@ export function parseFiniteMoneyNumber(value: string): number {
     ? parsed
     : Number.NaN;
 }
+
+/**
+ * Forma canônica para payloads `Money` da API que exigem exatamente duas
+ * casas decimais (ex.: `limitAmount` de orçamentos): `1500` → `1500.00`.
+ * Entradas inválidas retornam string vazia, como em `normalizeDecimalInput`.
+ */
+export function toApiMoney(value: string): string {
+  const normalized = normalizeDecimalInput(value);
+  if (!normalized) {
+    return "";
+  }
+
+  const [integerPart, decimalPart = ""] = normalized.split(".");
+  return `${integerPart}.${decimalPart.padEnd(2, "0")}`;
+}

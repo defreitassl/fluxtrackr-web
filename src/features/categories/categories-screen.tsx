@@ -1,127 +1,373 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Archive, Pencil, Plus, RefreshCw, Tags } from "lucide-react";
-import type { CSSProperties } from "react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Archive, Pencil, Plus, Tag, TrendingDown, TrendingUp, TriangleAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-import type { Category } from "@/api/generated/client";
+import type { Category, Transaction } from "@/api/generated/client";
 import { Dialog } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/ui/empty-state";
-import { ErrorState } from "@/components/ui/error-state";
-import { PageHeader } from "@/components/ui/page-header";
-import {
-  archiveCategoryData,
-  createCategoryData,
-  updateCategoryData,
-} from "@/features/categories/api/categories";
-import {
-  categoryFormSchema,
-  categoryTypeLabel,
-  categoryTypeOptions,
-  getCategoryErrorMessage,
-  toCategoryFormValues,
-  toCreateCategoryPayload,
-  toUpdateCategoryPayload,
-  type CategoryFormValues,
-} from "@/features/categories/lib/category-form";
+import { archiveCategoryData } from "@/features/categories/api/categories";
+import { CategoriesRail, type CategoryUsage } from "@/features/categories/components/categories-rail";
+import { CategoryDrawer } from "@/features/categories/components/category-drawer";
+import { getCategoryErrorMessage } from "@/features/categories/lib/category-form";
 import { categoryPresentation } from "@/features/categories/lib/category-presentation";
+import { useCategories } from "@/features/categories/queries/use-categories";
 import {
-  type CategoriesFilters,
-  type CategoryStatusFilter,
-  type CategoryTypeFilter,
-  useCategories,
-} from "@/features/categories/queries/use-categories";
+  currentMonthValue,
+  toListParams,
+} from "@/features/transactions/lib/transactions-filters";
+import { useTransactions } from "@/features/transactions/queries/use-transactions";
+import { cn } from "@/lib/cn";
+import { formatCurrency } from "@/lib/format";
+import { useGlobalSearch } from "@/providers/search-provider";
 
-const initialFilters: CategoriesFilters = { status: "active", type: "all" };
+type TypeTab = "all" | "expense" | "income";
 
-export function CategoriesScreen() {
-  const [filters, setFilters] = useState<CategoriesFilters>(initialFilters);
-  const [editing, setEditing] = useState<Category | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [archiving, setArchiving] = useState<Category | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const query = useCategories(filters);
+function buildUsage(transactions: Transaction[]): CategoryUsage {
+  const usage: CategoryUsage = new Map();
+  for (const transaction of transactions) {
+    if (!transaction.categoryId) continue;
+    const entry = usage.get(transaction.categoryId) ?? { count: 0, total: 0 };
+    entry.count += 1;
+    entry.total += Number(transaction.amount);
+    usage.set(transaction.categoryId, entry);
+  }
+  return usage;
+}
 
-  const refresh = () => { if (!query.isFetching) void query.refetch({ cancelRefetch: false }); };
-  const hasFilters = filters.status !== "active" || filters.type !== "all";
+function CategoryCard({
+  category,
+  usage,
+  onEdit,
+  onArchive,
+}: {
+  category: Category;
+  usage: CategoryUsage;
+  onEdit: (category: Category) => void;
+  onArchive: (category: Category) => void;
+}) {
+  const presentation = categoryPresentation(category);
+  const stats = usage.get(category.id);
+  const isIncome = category.type === "income";
 
   return (
-    <section className="resource-screen" aria-labelledby="categories-title">
-      <div className="resource-heading-row">
-        <PageHeader eyebrow="Organização" title="Categorias" titleId="categories-title" description="Classifique receitas e despesas sem perder vínculos históricos." />
-        <div className="resource-heading-actions">
-          <button className="secondary-button" disabled={query.isFetching} onClick={refresh} type="button">
-            <RefreshCw aria-hidden="true" className={query.isFetching ? "is-spinning" : undefined} size={16} /> Atualizar
-          </button>
-          <button className="primary-button" onClick={() => { setFeedback(null); setIsCreating(true); }} type="button"><Plus aria-hidden="true" size={16} /> Nova categoria</button>
+    <div className={cn("cgx-card", !category.isActive && "cgx-card-archived")}>
+      <div className="cgx-card-head">
+        <span
+          className="cgx-card-icon"
+          style={{
+            background: `color-mix(in srgb, ${presentation.color} 15%, transparent)`,
+            color: presentation.color,
+          }}
+        >
+          <presentation.Icon aria-hidden="true" size={17} />
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <strong>{category.name}</strong>
+          <span>
+            {category.isActive
+              ? `${stats?.count ?? 0} ${(stats?.count ?? 0) === 1 ? "lançamento" : "lançamentos"} no mês`
+              : "Arquivada"}
+          </span>
         </div>
       </div>
-      <CategoryFilters filters={filters} onChange={setFilters} />
-      {feedback ? <p className="mutation-feedback" role="status">{feedback}</p> : null}
-      {query.isPending && !query.data ? <CategorySkeleton /> : null}
-      {query.isError && !query.data ? <ErrorState title="Categorias indisponíveis" description="Não foi possível carregar suas categorias agora." onRetry={refresh} /> : null}
-      {query.data ? <div className="resource-content" aria-busy={query.isFetching}>
-        {query.isFetching && !query.isRefetchError ? <p className="resource-refreshing" role="status">Atualizando categorias…</p> : null}
-        {query.isRefetchError ? <RefetchAlert onRetry={refresh} /> : null}
-        {query.data.length === 0 ? <EmptyState icon={Tags} title={hasFilters ? "Nenhuma categoria corresponde aos filtros selecionados." : "Nenhuma categoria ativa foi encontrada."} description={hasFilters ? "Altere ou limpe os filtros para consultar outras categorias." : "Crie a primeira categoria para classificar seus lançamentos."} /> : <CategoryList categories={query.data} onArchive={setArchiving} onEdit={setEditing} />}
-      </div> : null}
-      {isCreating ? <CategoryDialog mode="create" onClose={() => setIsCreating(false)} onSaved={(message) => { setIsCreating(false); setFeedback(message); }} /> : null}
-      {editing ? <CategoryDialog category={editing} mode="edit" onClose={() => setEditing(null)} onSaved={(message) => { setEditing(null); setFeedback(message); }} /> : null}
-      {archiving ? <ArchiveCategoryDialog category={archiving} onClose={() => setArchiving(null)} onArchived={() => { setArchiving(null); setFeedback("Categoria arquivada com sucesso."); }} /> : null}
-    </section>
+      <div className="cgx-card-foot">
+        <span className={cn("cgx-card-total", isIncome && "cgx-card-total-income")}>
+          {isIncome ? "+ " : ""}
+          {formatCurrency(stats?.total ?? 0)}
+          <small> /mês</small>
+        </span>
+        {category.isActive ? (
+          <div className="cgx-card-actions">
+            <button
+              aria-label={`Editar ${category.name}`}
+              onClick={() => onEdit(category)}
+              title="Editar"
+              type="button"
+            >
+              <Pencil aria-hidden="true" size={14} />
+            </button>
+            <button
+              aria-label={`Arquivar ${category.name}`}
+              className="cgx-action-danger"
+              onClick={() => onArchive(category)}
+              title="Arquivar"
+              type="button"
+            >
+              <Archive aria-hidden="true" size={14} />
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
-function CategoryFilters({ filters, onChange }: { filters: CategoriesFilters; onChange: (filters: CategoriesFilters) => void }) {
-  return <div className="resource-filters" aria-label="Filtros de categorias">
-    <label><span>Status</span><select value={filters.status} onChange={(event) => onChange({ ...filters, status: event.target.value as CategoryStatusFilter })}><option value="active">Ativas</option><option value="archived">Arquivadas</option><option value="all">Todas</option></select></label>
-    <label><span>Tipo</span><select value={filters.type} onChange={(event) => onChange({ ...filters, type: event.target.value as CategoryTypeFilter })}><option value="all">Todos</option>{categoryTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-  </div>;
-}
+export function CategoriesScreen() {
+  const [tab, setTab] = useState<TypeTab>("all");
+  const [showArchived, setShowArchived] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editing, setEditing] = useState<Category | null>(null);
+  const [archiving, setArchiving] = useState<Category | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const { query: search } = useGlobalSearch();
+  const queryClient = useQueryClient();
 
-function CategoryList({ categories, onEdit, onArchive }: { categories: Category[]; onEdit: (category: Category) => void; onArchive: (category: Category) => void }) {
-  return <ul className="resource-list category-list" aria-label="Categorias">
-    {categories.map((category) => { const presentation = categoryPresentation(category); return <li className={!category.isActive ? "is-archived" : undefined} key={category.id}>
-      <span className="category-mark" style={{ "--category-accent": presentation.color } as CSSProperties}><presentation.Icon aria-hidden="true" size={18} /></span>
-      <div className="resource-item-main"><strong>{category.name}</strong><span>{categoryTypeLabel(category.type)} · {category.isActive ? "Ativa" : "Arquivada"}</span></div>
-      <div className="resource-item-actions">
-        {category.isActive ? <><button aria-label={`Editar ${category.name}`} className="icon-button" onClick={() => onEdit(category)} type="button"><Pencil aria-hidden="true" size={16} /></button><button aria-label={`Arquivar ${category.name}`} className="icon-button" onClick={() => onArchive(category)} type="button"><Archive aria-hidden="true" size={16} /></button></> : <span className="status-badge">Arquivada</span>}
-      </div>
-    </li>; })}</ul>;
-}
+  const categories = useCategories({ status: showArchived ? "all" : "active", type: "all" });
+  const monthTransactions = useTransactions(
+    toListParams({
+      month: currentMonthValue(),
+      type: "",
+      accountId: "",
+      categoryId: "",
+      paymentMethod: "",
+      source: "",
+    }),
+  );
 
-function CategoryDialog({ mode, category, onClose, onSaved }: { mode: "create" | "edit"; category?: Category; onClose: () => void; onSaved: (message: string) => void }) {
-  const client = useQueryClient();
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const form = useForm<CategoryFormValues>({ resolver: zodResolver(categoryFormSchema), defaultValues: category ? toCategoryFormValues(category) : { name: "", type: "expense" } });
-  const mutation = useMutation({
-    mutationFn: (values: CategoryFormValues) => mode === "create" ? createCategoryData(toCreateCategoryPayload(values)) : updateCategoryData(category!.id, toUpdateCategoryPayload(values)),
-    onSuccess: async () => { await client.invalidateQueries({ queryKey: ["categories"] }); },
+  const usage = useMemo(() => buildUsage(monthTransactions.data ?? []), [monthTransactions.data]);
+
+  useEffect(() => {
+    function openCreate() {
+      setEditing(null);
+      setDrawerOpen(true);
+    }
+    window.addEventListener("fluxtrackr:new-category", openCreate);
+    return () => window.removeEventListener("fluxtrackr:new-category", openCreate);
+  }, []);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(null), 5000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
+
+  const archiveMutation = useMutation({
+    mutationFn: async (category: Category) => archiveCategoryData(category.id),
+    onSuccess: async () => {
+      await Promise.all(
+        [["categories"], ["transaction-categories"], ["planning-categories"], ["category-budget-overview"]].map(
+          (queryKey) => queryClient.invalidateQueries({ queryKey }),
+        ),
+      );
+      setArchiving(null);
+      setFeedback("Categoria arquivada.");
+    },
+    onError: (mutationError) => setArchiveError(getCategoryErrorMessage(mutationError)),
   });
-  const errors = form.formState.errors;
-  const id = `${mode}-category`;
-  async function submit(values: CategoryFormValues) { setSubmitError(null); try { await mutation.mutateAsync(values); onSaved(mode === "create" ? "Categoria criada com sucesso." : "Categoria atualizada com sucesso."); } catch (error) { setSubmitError(getCategoryErrorMessage(error)); } }
-  return <Dialog busy={mutation.isPending} description="Os campos seguem o contrato da API." descriptionId={`${id}-description`} initialFocusSelector={`#${id}-name`} onClose={onClose} open title={mode === "create" ? "Nova categoria" : "Editar categoria"} titleId={`${id}-title`}>
-    <form className="account-form" noValidate onSubmit={form.handleSubmit(submit)}>
-      <label className="account-field" htmlFor={`${id}-name`}><span>Nome</span><input aria-describedby={errors.name ? `${id}-name-error` : undefined} aria-invalid={errors.name ? true : undefined} autoComplete="off" data-dialog-initial-focus disabled={mutation.isPending} id={`${id}-name`} placeholder="Ex.: Alimentação" {...form.register("name")} />{errors.name ? <small className="field-error" id={`${id}-name-error`} role="alert">{errors.name.message}</small> : null}</label>
-      <label className="account-field" htmlFor={`${id}-type`}><span>Tipo</span><select aria-describedby={errors.type ? `${id}-type-error` : undefined} aria-invalid={errors.type ? true : undefined} disabled={mutation.isPending} id={`${id}-type`} {...form.register("type")}>{categoryTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{errors.type ? <small className="field-error" id={`${id}-type-error`} role="alert">{errors.type.message}</small> : null}</label>
-      {submitError ? <p className="account-form-error" role="alert">{submitError}</p> : null}
-      <div className="account-form-actions"><button className="secondary-button" disabled={mutation.isPending} onClick={onClose} type="button">Cancelar</button><button className="primary-button" disabled={mutation.isPending} type="submit">{mutation.isPending ? "Salvando…" : "Salvar"}</button></div>
-    </form>
-  </Dialog>;
-}
 
-function ArchiveCategoryDialog({ category, onClose, onArchived }: { category: Category; onClose: () => void; onArchived: () => void }) {
-  const client = useQueryClient(); const [error, setError] = useState<string | null>(null);
-  const mutation = useMutation({ mutationFn: () => archiveCategoryData(category.id), onSuccess: async () => { await client.invalidateQueries({ queryKey: ["categories"] }); } });
-  async function archive() { setError(null); try { await mutation.mutateAsync(); onArchived(); } catch (cause) { setError(getCategoryErrorMessage(cause)); } }
-  return <Dialog busy={mutation.isPending} description="Ela deixará de estar disponível para novos lançamentos. Transações e demais registros históricos permanecerão vinculados. Orçamentos ativos vinculados também serão arquivados." descriptionId="archive-category-description" onClose={onClose} open title="Arquivar esta categoria?" titleId="archive-category-title">
-    <div className="confirmation-dialog"><p><strong>{category.name}</strong> · {categoryTypeLabel(category.type)}</p>{error ? <p className="account-form-error" role="alert">{error}</p> : null}<div className="account-form-actions"><button className="secondary-button" disabled={mutation.isPending} onClick={onClose} type="button">Cancelar</button><button className="danger-button" disabled={mutation.isPending} onClick={() => void archive()} type="button">{mutation.isPending ? "Arquivando…" : "Arquivar categoria"}</button></div></div>
-  </Dialog>;
-}
+  const term = search.trim().toLowerCase();
+  const visible = useMemo(
+    () =>
+      (categories.data ?? []).filter((category) =>
+        term ? category.name.toLowerCase().includes(term) : true,
+      ),
+    [categories.data, term],
+  );
+  const expenseCategories = visible.filter((category) => category.type !== "income");
+  const incomeCategories = visible.filter((category) => category.type !== "expense");
 
-function RefetchAlert({ onRetry }: { onRetry: () => void }) { return <div className="resource-refetch-alert" role="alert"><span>Não foi possível atualizar. Os dados exibidos podem estar desatualizados.</span><button className="secondary-button" onClick={onRetry} type="button">Tentar novamente</button></div>; }
-function CategorySkeleton() { return <div className="resource-skeleton" aria-label="Carregando categorias" role="status"><span /><span /><span /></div>; }
+  function openEdit(category: Category) {
+    setFeedback(null);
+    setEditing(category);
+    setDrawerOpen(true);
+  }
+
+  const sections: Array<{
+    key: TypeTab;
+    title: string;
+    icon: React.ReactNode;
+    items: Category[];
+  }> = [
+    {
+      key: "expense",
+      title: "Despesas",
+      icon: <TrendingDown aria-hidden="true" color="var(--danger)" size={15} />,
+      items: expenseCategories,
+    },
+    {
+      key: "income",
+      title: "Receitas",
+      icon: <TrendingUp aria-hidden="true" color="var(--green-strong)" size={15} />,
+      items: incomeCategories,
+    },
+  ];
+
+  return (
+    <section className="cgx-screen" aria-label="Categorias">
+      <div className="cgx-toolbar">
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <div className="tlx-view-switch" role="group" aria-label="Filtrar por tipo">
+            <button aria-pressed={tab === "all"} onClick={() => setTab("all")} type="button">
+              Todas
+            </button>
+            <button aria-pressed={tab === "expense"} onClick={() => setTab("expense")} type="button">
+              Despesas
+            </button>
+            <button aria-pressed={tab === "income"} onClick={() => setTab("income")} type="button">
+              Receitas
+            </button>
+          </div>
+          <button
+            aria-pressed={showArchived}
+            className={cn("txx-chip txx-chip-ghost", showArchived && "txx-chip-active")}
+            onClick={() => setShowArchived((value) => !value)}
+            type="button"
+          >
+            <Archive aria-hidden="true" size={14} />
+            Mostrar arquivadas
+          </button>
+        </div>
+        <span className="cgx-count">
+          {visible.length} {visible.length === 1 ? "categoria" : "categorias"}
+        </span>
+      </div>
+
+      <div className="cgx-body">
+        <div className="cgx-main">
+          {feedback ? (
+            <p className="mutation-feedback" role="status" style={{ marginBottom: 12 }}>
+              {feedback}
+            </p>
+          ) : null}
+
+          {categories.isPending ? (
+            <div aria-busy="true" aria-label="Carregando categorias" className="cgx-skeleton" role="status">
+              <span />
+              <span />
+              <span />
+            </div>
+          ) : null}
+
+          {categories.isError && !categories.data ? (
+            <div className="tlx-state" role="alert">
+              <div>
+                <span className="tlx-state-icon tlx-tone-red">
+                  <TriangleAlert aria-hidden="true" size={24} />
+                </span>
+                <strong>Falha ao carregar categorias</strong>
+                <p>Verifique a conexão e tente novamente.</p>
+                <button
+                  className="tlx-state-retry"
+                  onClick={() => categories.refetch({ cancelRefetch: false })}
+                  type="button"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {categories.data ? (
+            visible.length === 0 ? (
+              <div className="tlx-state">
+                <div>
+                  <span className="tlx-state-icon tlx-tone-green">
+                    <Tag aria-hidden="true" size={24} />
+                  </span>
+                  <strong>Nenhuma categoria encontrada</strong>
+                  <p>Crie categorias para organizar suas receitas e despesas.</p>
+                  <button
+                    className="tlx-state-cta"
+                    onClick={() => {
+                      setEditing(null);
+                      setDrawerOpen(true);
+                    }}
+                    type="button"
+                  >
+                    <Plus aria-hidden="true" size={14} strokeWidth={2.4} />
+                    Nova categoria
+                  </button>
+                </div>
+              </div>
+            ) : (
+              sections
+                .filter((section) => tab === "all" || tab === section.key)
+                .map((section) =>
+                  section.items.length === 0 ? null : (
+                    <div key={section.key}>
+                      <div className="cgx-section-head">
+                        {section.icon}
+                        <strong>{section.title}</strong>
+                        <span>{section.items.length}</span>
+                      </div>
+                      <div className="cgx-grid">
+                        {section.items.map((category) => (
+                          <CategoryCard
+                            category={category}
+                            key={category.id}
+                            onArchive={(target) => {
+                              setArchiveError(null);
+                              setArchiving(target);
+                            }}
+                            onEdit={openEdit}
+                            usage={usage}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ),
+                )
+            )
+          ) : null}
+        </div>
+
+        <CategoriesRail categories={categories.data ?? []} usage={usage} />
+      </div>
+
+      <CategoryDrawer
+        editing={editing}
+        onClose={() => {
+          setDrawerOpen(false);
+          setEditing(null);
+        }}
+        onSaved={(message) => {
+          setDrawerOpen(false);
+          setEditing(null);
+          setFeedback(message);
+        }}
+        open={drawerOpen}
+      />
+
+      <Dialog
+        busy={archiveMutation.isPending}
+        description={
+          archiving
+            ? `Arquivar "${archiving.name}"? Os lançamentos existentes são preservados e os orçamentos ativos vinculados também serão arquivados.`
+            : ""
+        }
+        descriptionId="archive-category-description"
+        onClose={() => setArchiving(null)}
+        open={archiving !== null}
+        title="Arquivar categoria?"
+        titleId="archive-category-title"
+      >
+        {archiveError ? (
+          <p className="txx-form-error" role="alert">
+            {archiveError}
+          </p>
+        ) : null}
+        <div className="txx-drawer-foot" style={{ padding: "16px 0 0", borderTop: 0 }}>
+          <button
+            className="txx-drawer-cancel"
+            disabled={archiveMutation.isPending}
+            onClick={() => setArchiving(null)}
+            type="button"
+          >
+            Cancelar
+          </button>
+          <button
+            className="txx-drawer-save"
+            disabled={archiveMutation.isPending}
+            onClick={() => archiving && archiveMutation.mutate(archiving)}
+            style={{ background: "var(--danger)", borderColor: "var(--danger)" }}
+            type="button"
+          >
+            {archiveMutation.isPending ? "Arquivando…" : "Arquivar"}
+          </button>
+        </div>
+      </Dialog>
+    </section>
+  );
+}

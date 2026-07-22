@@ -1,19 +1,17 @@
 "use client";
 
-import { CircleDollarSign, SlidersHorizontal } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { CalendarDays, ChartNoAxesColumn, Plus, TriangleAlert, TrendingDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-import type { Category, CategoryBudgetOverviewBudgetsItem } from "@/api/generated/client";
-import { EmptyState } from "@/components/ui/empty-state";
-import { ErrorState } from "@/components/ui/error-state";
-import { LoadingState } from "@/components/ui/loading-state";
+import type { CategoryBudgetOverviewBudgetsItem } from "@/api/generated/client";
+import { FilterChip } from "@/features/transactions/components/filter-chip";
 import { ArchiveCategoryBudgetDialog } from "@/features/planning/components/archive-category-budget-dialog";
-import { CategoriesWithoutBudget } from "@/features/planning/components/categories-without-budget";
-import { CategoryBudgetFormDialog } from "@/features/planning/components/category-budget-form-dialog";
-import { CategoryBudgetList } from "@/features/planning/components/category-budget-list";
-import { PlanningHeader } from "@/features/planning/components/planning-header";
-import { PlanningOverview } from "@/features/planning/components/planning-overview";
+import { BudgetDrawer } from "@/features/planning/components/budget-drawer";
+import { BudgetGrid } from "@/features/planning/components/budget-grid";
+import { BudgetHero } from "@/features/planning/components/budget-hero";
+import { PlanningRail } from "@/features/planning/components/planning-rail";
 import {
+  formatPlanningPeriod,
   getCurrentPlanningPeriod,
   movePlanningPeriod,
   type PlanningPeriod,
@@ -27,306 +25,260 @@ import {
 } from "@/features/planning/lib/planning-presentation";
 import { useCategoryBudgetOverview } from "@/features/planning/queries/use-category-budget-overview";
 import { usePlanningCategories } from "@/features/planning/queries/use-planning-categories";
+import { useGlobalSearch } from "@/providers/search-provider";
 
-const SUCCESS_MESSAGE_TIMEOUT = 5000;
-const EMPTY_CATEGORIES: Category[] = [];
+function periodOptions(reference: PlanningPeriod) {
+  const options: Array<{ value: string; label: string }> = [];
+  for (let offset = 2; offset >= -12; offset -= 1) {
+    const period = movePlanningPeriod(reference, offset);
+    options.push({
+      value: `${period.year}-${period.month}`,
+      label: formatPlanningPeriod(period),
+    });
+  }
+  return options;
+}
+
+const sortLabels: Record<BudgetSort, string> = {
+  usage: "% usado",
+  category: "Categoria",
+  spent: "Gasto",
+  limit: "Limite",
+};
 
 export function PlanningScreen() {
-  const [period, setPeriod] = useState<PlanningPeriod>(getCurrentPlanningPeriod);
+  const currentPeriod = useMemo(() => getCurrentPlanningPeriod(), []);
+  const [period, setPeriod] = useState<PlanningPeriod>(currentPeriod);
   const [filter, setFilter] = useState<BudgetStatusFilter>("all");
   const [sort, setSort] = useState<BudgetSort>("usage");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createCategoryId, setCreateCategoryId] = useState<string | undefined>();
-  const [editingBudget, setEditingBudget] = useState<CategoryBudgetOverviewBudgetsItem | null>(null);
-  const [archivingBudget, setArchivingBudget] = useState<CategoryBudgetOverviewBudgetsItem | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editing, setEditing] = useState<CategoryBudgetOverviewBudgetsItem | null>(null);
+  const [initialCategoryId, setInitialCategoryId] = useState<string | null>(null);
+  const [archiving, setArchiving] = useState<CategoryBudgetOverviewBudgetsItem | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const { query: search } = useGlobalSearch();
 
   const overview = useCategoryBudgetOverview(period);
   const categories = usePlanningCategories();
-  const data = overview.data;
-  const availableCategories = categories.data ?? EMPTY_CATEGORIES;
-
-  const categoriesWithoutBudget = useMemo(
-    () => getCategoriesWithoutBudget(availableCategories, data?.budgets ?? []),
-    [availableCategories, data?.budgets],
-  );
-  const visibleBudgets = useMemo(
-    () => sortBudgetItems(filterBudgetItems(data?.budgets ?? [], filter), sort),
-    [data?.budgets, filter, sort],
-  );
-
-  const isRefreshing = overview.isFetching || categories.isFetching;
-  const currentPeriod = getCurrentPlanningPeriod();
-  const isCurrentPeriod = period.year === currentPeriod.year && period.month === currentPeriod.month;
-  const canCreateBudget = Boolean(
-    data && !overview.isPlaceholderData && !categories.isPending && !categories.isError && categoriesWithoutBudget.length,
-  );
-  const hasBudgetEligibleCategory = availableCategories.some(
-    (category) => category.isActive && (category.type === "expense" || category.type === "both"),
-  );
 
   useEffect(() => {
-    return () => {
-      if (successTimer.current) {
-        clearTimeout(successTimer.current);
-      }
-    };
+    function openCreate() {
+      setEditing(null);
+      setInitialCategoryId(null);
+      setDrawerOpen(true);
+    }
+    window.addEventListener("fluxtrackr:new-budget", openCreate);
+    return () => window.removeEventListener("fluxtrackr:new-budget", openCreate);
   }, []);
 
-  const showSuccess = (message: string) => {
-    setSuccessMessage(message);
-    if (successTimer.current) {
-      clearTimeout(successTimer.current);
-    }
-    successTimer.current = setTimeout(() => setSuccessMessage(null), SUCCESS_MESSAGE_TIMEOUT);
-  };
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(null), 5000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
 
-  const closeDialogs = () => {
-    setIsCreateOpen(false);
-    setCreateCategoryId(undefined);
-    setEditingBudget(null);
-    setArchivingBudget(null);
-  };
+  const visibleBudgets = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const budgets = (overview.data?.budgets ?? []).filter((budget) =>
+      term ? budget.category.name.toLowerCase().includes(term) : true,
+    );
+    return sortBudgetItems(filterBudgetItems(budgets, filter), sort);
+  }, [overview.data, filter, sort, search]);
 
-  const changePeriod = (nextPeriod: PlanningPeriod) => {
-    closeDialogs();
-    setSuccessMessage(null);
-    setFilter("all");
-    setPeriod(nextPeriod);
-  };
+  const categoriesWithoutBudget = useMemo(
+    () => getCategoriesWithoutBudget(categories.data ?? [], overview.data?.budgets ?? []),
+    [categories.data, overview.data],
+  );
 
-  const refresh = () => {
-    if (isRefreshing) {
-      return;
-    }
+  function openCreate(categoryId: string | null = null) {
+    setFeedback(null);
+    setEditing(null);
+    setInitialCategoryId(categoryId);
+    setDrawerOpen(true);
+  }
 
-    void Promise.all([
-      overview.refetch({ cancelRefetch: false }),
-      categories.refetch({ cancelRefetch: false }),
-    ]);
-  };
+  function openEdit(budget: CategoryBudgetOverviewBudgetsItem) {
+    setFeedback(null);
+    setEditing(budget);
+    setDrawerOpen(true);
+  }
 
-  const openCreate = (category?: Category) => {
-    if (!canCreateBudget) {
-      return;
-    }
-
-    setSuccessMessage(null);
-    setCreateCategoryId(category?.id);
-    setIsCreateOpen(true);
-  };
-
-  const handleSaved = (message: string) => {
-    closeDialogs();
-    showSuccess(message);
-  };
-
-  const handleArchived = () => {
-    closeDialogs();
-    showSuccess("Orçamento arquivado com sucesso.");
-  };
+  const statusChips: Array<{ key: BudgetStatusFilter; label: string; icon?: React.ReactNode }> = [
+    { key: "all", label: "Todos" },
+    {
+      key: "near_limit",
+      label: "Em atenção",
+      icon: <TriangleAlert aria-hidden="true" color="var(--amber)" size={15} />,
+    },
+    {
+      key: "exceeded",
+      label: "Ultrapassados",
+      icon: <TrendingDown aria-hidden="true" color="var(--danger)" size={15} />,
+    },
+  ];
 
   return (
-    <section aria-labelledby="planning-title" className="planning-screen">
-      <PlanningHeader
-        canCreateBudget={canCreateBudget}
-        isCurrentPeriod={isCurrentPeriod}
-        isInitialLoading={overview.isPending && !data}
-        isRefreshing={isRefreshing}
-        onCreateBudget={() => openCreate()}
-        onMovePeriod={(months) => changePeriod(movePlanningPeriod(period, months))}
-        onRefresh={refresh}
-        onSelectCurrentPeriod={() => changePeriod(getCurrentPlanningPeriod())}
-        period={period}
-      />
-
-      {overview.isPending && !data ? <LoadingState label="Carregando planejamento mensal…" /> : null}
-
-      {overview.isError && !data ? (
-        <ErrorState
-          description="Não foi possível obter os orçamentos deste período. Tente novamente em instantes."
-          onRetry={refresh}
-          title="Planejamento indisponível"
+    <section className="plx-screen" aria-label="Planejamento">
+      <div className="tlx-toolbar">
+        <div className="tlx-toolbar-lead">
+          <FilterChip
+            emptyValue={`${currentPeriod.year}-${currentPeriod.month}`}
+            icon={<CalendarDays aria-hidden="true" color="var(--text-muted)" size={15} />}
+            label={formatPlanningPeriod(currentPeriod)}
+            onChange={(value) => {
+              const [year, month] = value.split("-").map(Number);
+              setPeriod({ year, month });
+              setFilter("all");
+            }}
+            options={periodOptions(currentPeriod)}
+            value={`${period.year}-${period.month}`}
+          />
+          <span className="tlx-toolbar-divider" aria-hidden="true" />
+          {statusChips.map((chip) => (
+            <button
+              aria-pressed={filter === chip.key}
+              className="txx-chip"
+              key={chip.key}
+              onClick={() => setFilter(chip.key)}
+              type="button"
+            >
+              {chip.icon}
+              {chip.label}
+            </button>
+          ))}
+        </div>
+        <FilterChip
+          emptyValue="usage"
+          label={`Ordenar: ${sortLabels.usage}`}
+          onChange={(value) => setSort((value || "usage") as BudgetSort)}
+          options={(Object.keys(sortLabels) as BudgetSort[]).map((value) => ({
+            value,
+            label: `Ordenar: ${sortLabels[value]}`,
+          }))}
+          value={sort}
         />
-      ) : null}
+      </div>
 
-      {overview.isPlaceholderData ? (
-        <LoadingState label="Atualizando o planejamento do período selecionado…" />
-      ) : null}
-
-      {data && !overview.isPlaceholderData ? (
-        <div aria-busy={isRefreshing} className="planning-content">
+      <div className="plx-body">
+        <div className="plx-main">
+          {feedback ? (
+            <p className="mutation-feedback" role="status" style={{ marginBottom: 12 }}>
+              {feedback}
+            </p>
+          ) : null}
           {overview.isRefetchError ? (
-            <div className="planning-refetch-error" role="alert">
-              <p>Não foi possível atualizar os orçamentos. Os dados anteriores continuam visíveis.</p>
-              <button className="secondary-button" onClick={refresh} type="button">
+            <div className="timeline-refetch-alert tlx-refetch-alert" role="alert">
+              <span>Não foi possível atualizar. Os dados exibidos podem estar desatualizados.</span>
+              <button
+                className="secondary-button"
+                onClick={() => overview.refetch({ cancelRefetch: false })}
+                type="button"
+              >
                 Tentar novamente
               </button>
             </div>
           ) : null}
 
-          {successMessage ? <p className="planning-success-message" role="status">{successMessage}</p> : null}
+          {overview.isPending ? (
+            <div aria-busy="true" aria-label="Carregando orçamentos" className="plx-skeleton" role="status">
+              <span />
+              <span />
+              <span />
+            </div>
+          ) : null}
 
-          <PlanningOverview
-            filter={filter}
-            onFilterChange={setFilter}
-            onSortChange={setSort}
-            overview={data}
-            sort={sort}
-          />
+          {overview.isError && !overview.data ? (
+            <div className="tlx-state" role="alert">
+              <div>
+                <span className="tlx-state-icon tlx-tone-red">
+                  <TriangleAlert aria-hidden="true" size={24} />
+                </span>
+                <strong>Falha ao carregar orçamentos</strong>
+                <p>Verifique a conexão e tente novamente.</p>
+                <button
+                  className="tlx-state-retry"
+                  onClick={() => overview.refetch({ cancelRefetch: false })}
+                  type="button"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            </div>
+          ) : null}
 
-          {data.budgets.length === 0 ? (
-            <EmptyPlanningState
-              hasEligibleCategory={hasBudgetEligibleCategory}
-              isCategoriesLoading={categories.isPending}
-              onCreate={() => openCreate()}
-            />
-          ) : visibleBudgets.length === 0 ? (
-            <section className="planning-filter-empty">
-              <EmptyState
-                description="Altere o filtro para consultar os demais orçamentos deste mês."
-                icon={SlidersHorizontal}
-                title="Nenhum orçamento corresponde ao filtro selecionado."
-              />
-            </section>
-          ) : (
-            <CategoryBudgetList
-              budgets={visibleBudgets}
-              onArchive={(budget) => {
-                setSuccessMessage(null);
-                setArchivingBudget(budget);
-              }}
-              onEdit={(budget) => {
-                setSuccessMessage(null);
-                setEditingBudget(budget);
-              }}
-            />
-          )}
-
-          <PlanningCategoriesSection
-            categories={categoriesWithoutBudget}
-            isError={categories.isError}
-            isLoading={categories.isPending}
-            onDefineBudget={openCreate}
-            onRetry={() => void categories.refetch({ cancelRefetch: false })}
-            refetchError={categories.isRefetchError}
-          />
+          {overview.data ? (
+            <>
+              <BudgetHero overview={overview.data} />
+              {overview.data.budgets.length === 0 ? (
+                <div className="tlx-state">
+                  <div>
+                    <span className="tlx-state-icon tlx-tone-green">
+                      <ChartNoAxesColumn aria-hidden="true" size={24} />
+                    </span>
+                    <strong>Nenhum orçamento definido</strong>
+                    <p>Crie limites por categoria para acompanhar seus gastos do mês.</p>
+                    <button className="tlx-state-cta" onClick={() => openCreate()} type="button">
+                      <Plus aria-hidden="true" size={14} strokeWidth={2.4} />
+                      Novo orçamento
+                    </button>
+                  </div>
+                </div>
+              ) : visibleBudgets.length === 0 ? (
+                <div className="tlx-state">
+                  <div>
+                    <span className="tlx-state-icon tlx-tone-green">
+                      <ChartNoAxesColumn aria-hidden="true" size={24} />
+                    </span>
+                    <strong>Nenhum orçamento com este filtro</strong>
+                    <p>Ajuste os filtros ou a busca para ver os orçamentos do mês.</p>
+                  </div>
+                </div>
+              ) : (
+                <BudgetGrid budgets={visibleBudgets} onEdit={openEdit} />
+              )}
+            </>
+          ) : null}
         </div>
-      ) : null}
 
-      {isCreateOpen ? (
-        <CategoryBudgetFormDialog
-          categories={categoriesWithoutBudget}
-          initialCategoryId={createCategoryId}
-          mode="create"
-          onClose={closeDialogs}
-          onSaved={handleSaved}
-          open
-          period={period}
-        />
-      ) : null}
-      {editingBudget ? (
-        <CategoryBudgetFormDialog
-          budget={editingBudget}
-          categories={categoriesWithoutBudget}
-          mode="edit"
-          onClose={closeDialogs}
-          onSaved={handleSaved}
-          open
-          period={period}
-        />
-      ) : null}
-      {archivingBudget ? (
-        <ArchiveCategoryBudgetDialog
-          budget={archivingBudget}
-          onArchived={handleArchived}
-          onClose={closeDialogs}
-          open
-          period={period}
-        />
-      ) : null}
+        {overview.data ? (
+          <PlanningRail
+            categories={categories.data ?? []}
+            onDefineBudget={(categoryId) => openCreate(categoryId)}
+            overview={overview.data}
+          />
+        ) : (
+          <aside className="plx-rail" aria-hidden="true" />
+        )}
+      </div>
+
+      <BudgetDrawer
+        categoriesWithoutBudget={categoriesWithoutBudget}
+        editing={editing}
+        initialCategoryId={initialCategoryId}
+        onArchive={(budget) => {
+          setDrawerOpen(false);
+          setArchiving(budget);
+        }}
+        onClose={() => setDrawerOpen(false)}
+        onSaved={(message) => {
+          setDrawerOpen(false);
+          setEditing(null);
+          setFeedback(message);
+        }}
+        open={drawerOpen}
+        period={period}
+      />
+
+      <ArchiveCategoryBudgetDialog
+        budget={archiving}
+        onArchived={() => {
+          setArchiving(null);
+          setFeedback("Orçamento arquivado.");
+        }}
+        onClose={() => setArchiving(null)}
+        open={archiving !== null}
+        period={period}
+      />
     </section>
-  );
-}
-
-type EmptyPlanningStateProps = {
-  hasEligibleCategory: boolean;
-  isCategoriesLoading: boolean;
-  onCreate: () => void;
-};
-
-function EmptyPlanningState({ hasEligibleCategory, isCategoriesLoading, onCreate }: EmptyPlanningStateProps) {
-  if (isCategoriesLoading) {
-    return <LoadingState label="Verificando categorias disponíveis…" />;
-  }
-
-  if (!hasEligibleCategory) {
-    return (
-      <EmptyState
-        description="Crie ou ative uma categoria de despesa para definir o primeiro orçamento mensal."
-        icon={CircleDollarSign}
-        title="Nenhuma categoria disponível"
-      />
-    );
-  }
-
-  return (
-    <div className="planning-empty-budget-state">
-      <EmptyState
-        description="Defina limites por categoria para acompanhar os gastos do período selecionado."
-        icon={CircleDollarSign}
-        title="Nenhum orçamento foi definido para este mês."
-      />
-      <button className="primary-button" onClick={onCreate} type="button">
-        Criar orçamento
-      </button>
-    </div>
-  );
-}
-
-type PlanningCategoriesSectionProps = {
-  categories: Category[];
-  isError: boolean;
-  isLoading: boolean;
-  onDefineBudget: (category: Category) => void;
-  onRetry: () => void;
-  refetchError: boolean;
-};
-
-function PlanningCategoriesSection({
-  categories,
-  isError,
-  isLoading,
-  onDefineBudget,
-  onRetry,
-  refetchError,
-}: PlanningCategoriesSectionProps) {
-  if (isLoading && !categories.length) {
-    return <LoadingState label="Carregando categorias disponíveis…" />;
-  }
-
-  if (isError && !categories.length) {
-    return (
-      <ErrorState
-        description="Não foi possível verificar as categorias sem orçamento."
-        onRetry={onRetry}
-        title="Categorias indisponíveis"
-      />
-    );
-  }
-
-  return (
-    <>
-      {refetchError ? (
-        <div className="planning-refetch-error" role="alert">
-          <p>Não foi possível atualizar as categorias. A lista anterior continua visível.</p>
-          <button className="secondary-button" onClick={onRetry} type="button">
-            Tentar novamente
-          </button>
-        </div>
-      ) : null}
-      <CategoriesWithoutBudget categories={categories} onDefineBudget={onDefineBudget} />
-    </>
   );
 }

@@ -14,6 +14,8 @@ const searchPlaceholders: Record<string, string> = {
   "/transactions": "Buscar por descrição, valor ou categoria",
   "/timeline": "Buscar evento por descrição ou categoria",
   "/wallet": "Buscar conta ou cartão",
+  "/planning": "Buscar orçamento por categoria",
+  "/categories": "Buscar categoria",
 };
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
@@ -21,8 +23,14 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/timeline": { title: "Timeline", subtitle: "Seus eventos financeiros em ordem cronológica" },
   "/transactions": { title: "Transações", subtitle: "Registre, filtre e edite suas movimentações" },
   "/wallet": { title: "Carteira", subtitle: "Contas, cartões e faturas" },
-  "/planning": { title: "Planejamento", subtitle: "Orçamentos por categoria" },
-  "/categories": { title: "Categorias", subtitle: "Organização dos lançamentos" },
+  "/planning": {
+    title: "Planejamento",
+    subtitle: "Orçamentos por categoria — avisam quando você se aproxima do limite, sem bloquear",
+  },
+  "/categories": {
+    title: "Categorias",
+    subtitle: "Organize suas receitas e despesas com ícones e cores",
+  },
   "/notifications": { title: "Notificações", subtitle: "Alertas e avisos da conta" },
   "/settings": { title: "Configurações", subtitle: "Preferências da conta" },
 };
@@ -134,6 +142,24 @@ export function AppHeader({ onToggleSidebar, sidebarCollapsed }: AppHeaderProps)
               Adicionar
             </button>
           </>
+        ) : pathname.startsWith("/planning") ? (
+          <button
+            className="primary-cta"
+            onClick={() => window.dispatchEvent(new Event("fluxtrackr:new-budget"))}
+            type="button"
+          >
+            <Plus aria-hidden="true" size={15} strokeWidth={2.4} />
+            Novo orçamento
+          </button>
+        ) : pathname.startsWith("/categories") ? (
+          <button
+            className="primary-cta"
+            onClick={() => window.dispatchEvent(new Event("fluxtrackr:new-category"))}
+            type="button"
+          >
+            <Plus aria-hidden="true" size={15} strokeWidth={2.4} />
+            Nova categoria
+          </button>
         ) : pathname.startsWith("/transactions") ? (
           <button
             className="primary-cta"

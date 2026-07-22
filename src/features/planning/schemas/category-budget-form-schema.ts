@@ -6,7 +6,7 @@ import type {
   UpdateCategoryBudgetRequest,
 } from "@/api/generated/client";
 import type { PlanningPeriod } from "@/features/planning/lib/planning-period";
-import { isDecimal12_2, normalizeDecimalInput, parseFiniteMoneyNumber } from "@/lib/money-input";
+import { isDecimal12_2, parseFiniteMoneyNumber, toApiMoney } from "@/lib/money-input";
 
 const budgetLimitField = z
   .string()
@@ -46,7 +46,7 @@ export function toCreateCategoryBudgetPayload(
     categoryId: values.categoryId,
     year: period.year,
     month: period.month,
-    limitAmount: normalizeDecimalInput(values.limitAmount),
+    limitAmount: toApiMoney(values.limitAmount),
     warningPercentage: values.warningPercentage,
   };
 }
@@ -55,7 +55,7 @@ export function toUpdateCategoryBudgetPayload(
   values: CategoryBudgetFormValues,
 ): UpdateCategoryBudgetRequest {
   return {
-    limitAmount: normalizeDecimalInput(values.limitAmount),
+    limitAmount: toApiMoney(values.limitAmount),
     warningPercentage: values.warningPercentage,
   };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isDecimal12_2, normalizeDecimalInput, parseFiniteMoneyNumber } from "@/lib/money-input";
+import { isDecimal12_2, normalizeDecimalInput, parseFiniteMoneyNumber, toApiMoney } from "@/lib/money-input";
 
 describe("normalizeDecimalInput", () => {
   it.each([
@@ -42,5 +42,14 @@ describe("parseFiniteMoneyNumber", () => {
     expect(Number.isNaN(parseFiniteMoneyNumber("9".repeat(500)))).toBe(true);
     expect(Number.isNaN(parseFiniteMoneyNumber("texto"))).toBe(true);
     expect(Number.isNaN(parseFiniteMoneyNumber("10000000000"))).toBe(true);
+  });
+});
+
+describe("toApiMoney", () => {
+  it("pads to exactly two decimal places as the API requires", () => {
+    expect(toApiMoney("1500")).toBe("1500.00");
+    expect(toApiMoney("1500,5")).toBe("1500.50");
+    expect(toApiMoney("1200,50")).toBe("1200.50");
+    expect(toApiMoney("abc")).toBe("");
   });
 });
