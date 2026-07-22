@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { SessionExpiryListener } from "@/components/layout/session-expiry-listener";
 
 const SIDEBAR_COOKIE = "fluxtrackr_sidebar";
 
@@ -25,6 +26,7 @@ export function AppShell({ children, email, initialCollapsed = false }: AppShell
 
   return (
     <div className="app-shell" data-collapsed={collapsed ? "true" : "false"}>
+      <SessionExpiryListener />
       <AppSidebar email={email} />
       <div className="app-content">
         <AppHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={collapsed} />

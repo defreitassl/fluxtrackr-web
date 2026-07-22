@@ -33,7 +33,7 @@ export function SidebarProfile({ email }: SidebarProfileProps) {
   async function logout(event: React.MouseEvent) {
     event.stopPropagation();
     await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
-    router.replace("/login");
+    router.replace("/login?state=logout");
     router.refresh();
   }
 

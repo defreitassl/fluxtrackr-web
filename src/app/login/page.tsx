@@ -1,7 +1,7 @@
 import { ChartNoAxesCombined } from "lucide-react";
 import { redirect } from "next/navigation";
 
-import { LoginForm } from "@/features/auth/login-form";
+import { AuthScreen } from "@/features/auth/auth-screen";
 import { getSessionIdentity } from "@/lib/session";
 
 export const metadata = { title: "Entrar" };
@@ -12,32 +12,59 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="login-page">
-      <section className="login-intro" aria-label="Sobre o FluxTrackr">
-        <div className="brand-lockup login-brand">
-          <span className="brand-mark" aria-hidden="true">
-            <ChartNoAxesCombined size={20} strokeWidth={2.4} />
+    <main className="agx-page">
+      <section className="agx-hero" aria-label="Sobre o FluxTrackr">
+        <div className="agx-brand">
+          <span className="agx-brand-mark" aria-hidden="true">
+            <ChartNoAxesCombined size={22} strokeWidth={2.4} />
           </span>
-          <span>FluxTrackr</span>
+          <div>
+            <strong>FluxTrackr</strong>
+            <span>Gestão financeira pessoal</span>
+          </div>
         </div>
-        <div>
-          <p className="page-eyebrow">Seu dinheiro, em perspectiva</p>
-          <h1>Clareza para o presente.<br />Calma para o próximo passo.</h1>
+
+        <div className="agx-hero-copy">
+          <small>Seu dinheiro, em perspectiva</small>
+          <h1>
+            Clareza para o presente.
+            <br />
+            Calma para o próximo passo.
+          </h1>
           <p>
-            Acompanhe o que aconteceu e o que está por vir sem transformar sua
-            rotina em uma planilha.
+            Acompanhe o que aconteceu e o que está por vir sem transformar sua rotina em uma
+            planilha.
           </p>
+          <div className="agx-hero-mini">
+            <div>
+              <span>Visão do dia a dia</span>
+              <strong>Disponível para gastar</strong>
+            </div>
+            <div>
+              <span>Próximos 30 dias</span>
+              <strong>Projeção de saldo</strong>
+            </div>
+            <div>
+              <span>Cartões e faturas</span>
+              <strong>Comprometido visível</strong>
+            </div>
+            <div>
+              <span>Orçamentos</span>
+              <strong>Avisos sem bloqueio</strong>
+            </div>
+          </div>
         </div>
-        <p className="login-footnote">Dados financeiros são consolidados pela API do FluxTrackr.</p>
+
+        <p className="agx-hero-footnote">Dados financeiros consolidados pela API do FluxTrackr.</p>
       </section>
 
-      <section className="login-panel" aria-labelledby="login-title">
-        <div className="login-heading">
-          <p className="page-eyebrow">Acesso privado</p>
-          <h2 id="login-title">Bem-vindo de volta</h2>
-          <p>Entre com suas credenciais para continuar.</p>
+      <section className="agx-panel" aria-label="Acesso da conta">
+        <div className="agx-card">
+          <AuthScreen />
+          <p className="agx-footer">
+            Contas lembradas neste dispositivo guardam apenas nome e e-mail — nunca a sua senha.
+          </p>
         </div>
-        <LoginForm />
       </section>
     </main>
   );

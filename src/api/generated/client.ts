@@ -81,6 +81,20 @@ export interface PasswordUpdated {
   updated: true;
 }
 
+export interface RegisterRequest {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  email: string;
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  password: string;
+}
+
 export interface LoginRequest {
   email: string;
   /** @minLength 1 */
@@ -2680,6 +2694,59 @@ export const archiveCategory = async (id: string, options?: RequestInit): Promis
     method: 'DELETE'
 
 
+  }
+);}
+
+
+
+export type registerAccountResponse201 = {
+  data: AccessToken
+  status: 201
+}
+
+export type registerAccountResponse400 = {
+  data: BadRequestResponse
+  status: 400
+}
+
+export type registerAccountResponse409 = {
+  data: ErrorResponse
+  status: 409
+}
+
+export type registerAccountResponse500 = {
+  data: InternalServerErrorResponse
+  status: 500
+}
+
+export type registerAccountResponseSuccess = (registerAccountResponse201) & {
+  headers: Headers;
+};
+export type registerAccountResponseError = (registerAccountResponse400 | registerAccountResponse409 | registerAccountResponse500) & {
+  headers: Headers;
+};
+
+export type registerAccountResponse = (registerAccountResponseSuccess | registerAccountResponseError)
+
+export const getRegisterAccountUrl = () => {
+
+
+
+
+  return `/auth/register`
+}
+
+/**
+ * @summary Cria uma conta e autentica
+ */
+export const registerAccount = async (registerRequest: RegisterRequest, options?: RequestInit): Promise<registerAccountResponse> => {
+
+  return apiFetch<registerAccountResponse>(getRegisterAccountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(registerRequest)
   }
 );}
 

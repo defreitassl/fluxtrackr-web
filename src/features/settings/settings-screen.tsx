@@ -160,7 +160,7 @@ export function SettingsScreen({ email }: SettingsScreenProps) {
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
-    router.replace("/login");
+    router.replace("/login?state=logout");
     router.refresh();
   }
 
