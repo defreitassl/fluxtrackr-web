@@ -6908,3 +6908,19 @@ a {
     box-shadow: var(--shadow-lg);
   }
 }
+
+/* ==================================================================== */
+/* Blocos por workstream (IMPLEMENTATION_PLAN.md). Cada agente escreve  */
+/* SOMENTE dentro do seu bloco — nunca edite blocos alheios ou regras   */
+/* anteriores (exceto WS6, único autorizado a tocar media queries).     */
+/* ==================================================================== */
+
+/* ==================== [WS1] Eventos financeiros (evx-*) ==================== */
+
+/* ==================== [WS2] Recorrências (rcx-*) ==================== */
+
+/* ==================== [WS3] Metas (glx-*) ==================== */
+
+/* ==================== [WS4+WS5] Carteira: arquivar conta + históricos (wlx-history-*, wlx-purchases-*) ==================== */
+
+/* ==================== [WS6] Mobile: bottom nav (bnx-*) + varredura responsiva ==================== */

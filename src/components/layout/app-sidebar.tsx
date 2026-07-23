@@ -2,10 +2,13 @@
 
 import {
   Calendar,
+  CalendarClock,
   ChartNoAxesColumn,
   ChartNoAxesCombined,
   ReceiptText,
+  Repeat,
   Tag,
+  Target,
   House,
   Wallet,
 } from "lucide-react";
@@ -24,6 +27,9 @@ export function AppSidebar({ email }: AppSidebarProps) {
   const { data: overview } = useDashboardOverview();
 
   const timelineBadge = overview?.upcomingCommitments.length;
+  const eventsBadge = overview?.upcomingCommitments.filter(
+    (commitment) => commitment.sourceType === "financial_event",
+  ).length;
   const planningBadge = overview
     ? overview.budgetSummary.nearLimitCount + overview.budgetSummary.exceededCount
     : undefined;
@@ -34,6 +40,7 @@ export function AppSidebar({ email }: AppSidebarProps) {
       items: [
         { href: "/dashboard", label: "Dashboard", icon: House },
         { href: "/timeline", label: "Timeline", icon: Calendar, badge: timelineBadge },
+        { href: "/events", label: "Eventos", icon: CalendarClock, badge: eventsBadge },
       ],
     },
     {
@@ -41,11 +48,15 @@ export function AppSidebar({ email }: AppSidebarProps) {
       items: [
         { href: "/transactions", label: "Transações", icon: ReceiptText },
         { href: "/wallet", label: "Carteira", icon: Wallet },
+        { href: "/recurrences", label: "Recorrências", icon: Repeat },
       ],
     },
     {
       label: "Planejamento",
-      items: [{ href: "/planning", label: "Planejamento", icon: ChartNoAxesColumn, badge: planningBadge }],
+      items: [
+        { href: "/planning", label: "Planejamento", icon: ChartNoAxesColumn, badge: planningBadge },
+        { href: "/goals", label: "Metas", icon: Target },
+      ],
     },
     {
       label: "Organização",

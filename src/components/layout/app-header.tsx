@@ -13,8 +13,11 @@ import { useGlobalSearch } from "@/providers/search-provider";
 const searchPlaceholders: Record<string, string> = {
   "/transactions": "Buscar por descrição, valor ou categoria",
   "/timeline": "Buscar evento por descrição ou categoria",
+  "/events": "Buscar evento por nome",
   "/wallet": "Buscar conta ou cartão",
+  "/recurrences": "Buscar assinatura ou fixo",
   "/planning": "Buscar orçamento por categoria",
+  "/goals": "Buscar meta",
   "/categories": "Buscar categoria",
   "/notifications": "Buscar notificação ou atividade",
 };
@@ -22,8 +25,11 @@ const searchPlaceholders: Record<string, string> = {
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Visão financeira", subtitle: "Início · dinheiro disponível e projeção" },
   "/timeline": { title: "Timeline", subtitle: "Seus eventos financeiros em ordem cronológica" },
+  "/events": { title: "Eventos", subtitle: "Compromissos futuros — confirme, adie ou realize" },
   "/transactions": { title: "Transações", subtitle: "Registre, filtre e edite suas movimentações" },
   "/wallet": { title: "Carteira", subtitle: "Contas, cartões e faturas" },
+  "/recurrences": { title: "Recorrências", subtitle: "Assinaturas, gastos fixos e rendas fixas" },
+  "/goals": { title: "Metas", subtitle: "Objetivos de poupança e progresso" },
   "/planning": {
     title: "Planejamento",
     subtitle: "Orçamentos por categoria — avisam quando você se aproxima do limite, sem bloquear",
@@ -46,6 +52,37 @@ function getPageTitle(pathname: string) {
   return match ? pageTitles[match] : { title: "FluxTrackr", subtitle: "Gestão pessoal" };
 }
 
+/**
+ * CTA primário por rota. Cada tela escuta o evento correspondente via
+ * `window.addEventListener`. Rotas sem entrada usam o fallback (link para
+ * nova movimentação).
+ */
+const headerCtas: Array<{ prefix: string; label: string; event: string; icon: typeof Plus }> = [
+  { prefix: "/wallet", label: "Adicionar", event: "fluxtrackr:wallet-add", icon: Plus },
+  {
+    prefix: "/notifications",
+    label: "Marcar todas como lidas",
+    event: "fluxtrackr:notifications-read-all",
+    icon: MailOpen,
+  },
+  { prefix: "/planning", label: "Novo orçamento", event: "fluxtrackr:new-budget", icon: Plus },
+  { prefix: "/categories", label: "Nova categoria", event: "fluxtrackr:new-category", icon: Plus },
+  {
+    prefix: "/transactions",
+    label: "Nova movimentação",
+    event: "fluxtrackr:new-transaction",
+    icon: Plus,
+  },
+  { prefix: "/events", label: "Novo evento", event: "fluxtrackr:new-event", icon: Plus },
+  {
+    prefix: "/recurrences",
+    label: "Nova recorrência",
+    event: "fluxtrackr:new-recurrence",
+    icon: Plus,
+  },
+  { prefix: "/goals", label: "Nova meta", event: "fluxtrackr:new-goal", icon: Plus },
+];
+
 function getCurrentPeriodLabel() {
   const label = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date());
   return label.charAt(0).toUpperCase() + label.slice(1).replace(" de ", " ");
@@ -65,6 +102,7 @@ export function AppHeader({ onToggleSidebar, sidebarCollapsed }: AppHeaderProps)
   const searchPlaceholder =
     Object.entries(searchPlaceholders).find(([route]) => pathname.startsWith(route))?.[1] ??
     "Buscar transações, contas ou categorias";
+  const cta = headerCtas.find((entry) => pathname.startsWith(entry.prefix));
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -127,60 +165,24 @@ export function AppHeader({ onToggleSidebar, sidebarCollapsed }: AppHeaderProps)
         <ThemeToggle />
         <NotificationButton />
         {pathname.startsWith("/wallet") ? (
-          <>
-            <button
-              className="header-period"
-              onClick={() => window.dispatchEvent(new Event("fluxtrackr:wallet-transfer"))}
-              style={{ cursor: "pointer" }}
-              type="button"
-            >
-              <ArrowLeftRight aria-hidden="true" color="var(--text-muted)" size={15} />
-              Transferir
-            </button>
-            <button
-              className="primary-cta"
-              onClick={() => window.dispatchEvent(new Event("fluxtrackr:wallet-add"))}
-              type="button"
-            >
-              <Plus aria-hidden="true" size={15} strokeWidth={2.4} />
-              Adicionar
-            </button>
-          </>
-        ) : pathname.startsWith("/notifications") ? (
           <button
-            className="primary-cta"
-            onClick={() => window.dispatchEvent(new Event("fluxtrackr:notifications-read-all"))}
+            className="header-period"
+            onClick={() => window.dispatchEvent(new Event("fluxtrackr:wallet-transfer"))}
+            style={{ cursor: "pointer" }}
             type="button"
           >
-            <MailOpen aria-hidden="true" size={15} strokeWidth={2.2} />
-            Marcar todas como lidas
+            <ArrowLeftRight aria-hidden="true" color="var(--text-muted)" size={15} />
+            Transferir
           </button>
-        ) : pathname.startsWith("/planning") ? (
+        ) : null}
+        {cta ? (
           <button
             className="primary-cta"
-            onClick={() => window.dispatchEvent(new Event("fluxtrackr:new-budget"))}
+            onClick={() => window.dispatchEvent(new Event(cta.event))}
             type="button"
           >
-            <Plus aria-hidden="true" size={15} strokeWidth={2.4} />
-            Novo orçamento
-          </button>
-        ) : pathname.startsWith("/categories") ? (
-          <button
-            className="primary-cta"
-            onClick={() => window.dispatchEvent(new Event("fluxtrackr:new-category"))}
-            type="button"
-          >
-            <Plus aria-hidden="true" size={15} strokeWidth={2.4} />
-            Nova categoria
-          </button>
-        ) : pathname.startsWith("/transactions") ? (
-          <button
-            className="primary-cta"
-            onClick={() => window.dispatchEvent(new Event("fluxtrackr:new-transaction"))}
-            type="button"
-          >
-            <Plus aria-hidden="true" size={15} strokeWidth={2.4} />
-            Nova movimentação
+            <cta.icon aria-hidden="true" size={15} strokeWidth={2.4} />
+            {cta.label}
           </button>
         ) : (
           <Link className="primary-cta" href="/transactions">
