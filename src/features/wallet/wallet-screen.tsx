@@ -29,6 +29,7 @@ import { CreateCreditCardDialog } from "@/features/wallet/credit-cards/component
 import { CreateCreditCardPurchaseDialog } from "@/features/wallet/credit-cards/components/create-credit-card-purchase-dialog";
 import { EditCreditCardDialog } from "@/features/wallet/credit-cards/components/edit-credit-card-dialog";
 import { AccountTransferDialog } from "@/features/wallet/transfers/components/account-transfer-dialog";
+import { AccountHistoryDrawer } from "@/features/wallet/history/components/account-history-drawer";
 import { useCurrentWalletPeriod } from "@/features/wallet/hooks/use-current-wallet-period";
 import { resolveWalletCardSelection } from "@/features/wallet/lib/wallet-selection";
 import { useWalletOverview } from "@/features/wallet/queries/use-wallet-overview";
@@ -57,6 +58,7 @@ export function WalletScreen() {
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [adjustingAccountId, setAdjustingAccountId] = useState<string | null>(null);
   const [transferringAccountId, setTransferringAccountId] = useState<string | null>(null);
+  const [historyAccountId, setHistoryAccountId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -117,6 +119,7 @@ export function WalletScreen() {
 
   const adjustingAccount = data?.accounts.find(({ account }) => account.id === adjustingAccountId);
   const transferringAccount = data?.accounts.find(({ account }) => account.id === transferringAccountId);
+  const historyAccount = data?.accounts.find(({ account }) => account.id === historyAccountId)?.account ?? null;
   const payingInvoice = data?.invoices.find((invoice) => invoice.id === payingInvoiceId) ?? null;
   const payingCard = data?.creditCards.find((card) => card.id === payingInvoice?.creditCardId) ?? null;
 
@@ -302,6 +305,10 @@ export function WalletScreen() {
                     setSuccessMessage(null);
                     setEditingAccount(account);
                   }}
+                  onHistoryAccount={(account) => {
+                    setSuccessMessage(null);
+                    setHistoryAccountId(account.id);
+                  }}
                   onTransferAccount={(account) => {
                     setSuccessMessage(null);
                     setTransferringAccountId(account.id);
@@ -404,6 +411,12 @@ export function WalletScreen() {
           open
         />
       ) : null}
+      <AccountHistoryDrawer
+        account={historyAccount}
+        accounts={data?.accounts ?? []}
+        onClose={() => setHistoryAccountId(null)}
+        open={historyAccount !== null}
+      />
       {isCreateCardOpen ? (
         <CreateCreditCardDialog
           accounts={data?.accounts ?? []}

@@ -11,6 +11,7 @@ import type {
 } from "@/api/generated/client";
 import { categoryPresentation } from "@/features/categories/lib/category-presentation";
 import { listTransactionCategoriesData } from "@/features/transactions/api/transactions";
+import { WalletPurchasesSection } from "@/features/wallet/components/wallet-purchases-section";
 import { getInvoiceStatusLabel, isSafeHexColor } from "@/features/wallet/lib/wallet-presentation";
 import { cn } from "@/lib/cn";
 import { formatCurrency } from "@/lib/format";
@@ -233,6 +234,8 @@ export function WalletInvoicePanel({
             );
           })
         )}
+
+        <WalletPurchasesSection creditCardId={card.id} />
 
         <button
           className="wlx-add-row"

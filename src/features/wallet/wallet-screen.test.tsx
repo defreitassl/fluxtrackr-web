@@ -25,6 +25,14 @@ vi.mock("@/features/wallet/credit-cards/mutations/use-pay-credit-card-invoice", 
   usePayCreditCardInvoice: vi.fn().mockReturnValue({ isPending: false, mutate: vi.fn() }),
 }));
 
+vi.mock("@/features/wallet/credit-cards/queries/use-credit-card-purchases", () => ({
+  useCreditCardPurchases: vi.fn().mockReturnValue({ data: [], isError: false, isPending: false }),
+}));
+
+vi.mock("@/features/wallet/history/queries/use-account-history", () => ({
+  useAccountHistory: vi.fn().mockReturnValue({ data: [], isError: false, isPending: false }),
+}));
+
 import { WalletScreen } from "@/features/wallet/wallet-screen";
 import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
 import { useWalletOverview } from "@/features/wallet/queries/use-wallet-overview";
@@ -224,5 +232,17 @@ describe("WalletScreen", () => {
 
     expect(screen.getByRole("dialog", { name: "Arquivar conta" })).toBeInTheDocument();
     expect(screen.getByText(/Arquivar não apaga dados/i)).toBeInTheDocument();
+  });
+
+  it("opens the account history drawer from the account menu", () => {
+    mockWallet({ data: { accounts: [account], creditCards: [], invoices: [] } });
+
+    render(<WalletScreen />, { wrapper });
+
+    fireEvent.click(screen.getByRole("button", { name: "Ações de Nubank" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Histórico da conta" }));
+
+    expect(screen.getByRole("dialog", { name: "Histórico da conta" })).toBeInTheDocument();
+    expect(screen.getByText("Sem histórico por enquanto")).toBeInTheDocument();
   });
 });
