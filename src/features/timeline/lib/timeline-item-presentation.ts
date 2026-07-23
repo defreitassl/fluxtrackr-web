@@ -33,6 +33,8 @@ export type TimelineItemView = {
   isRecurring: boolean;
   isProjectedEvent: boolean;
   note: string | null;
+  /** link de foco na tela da origem (hoje só eventos financeiros) */
+  href: string | null;
 };
 
 const recurringSources = new Set(["fixed_expense", "fixed_income", "subscription"]);
@@ -155,6 +157,7 @@ export function timelineItemView(
     isRecurring,
     isProjectedEvent: item.sourceType === "financial_event" && item.balanceImpact === "projected",
     note,
+    href: item.sourceType === "financial_event" ? `/events?focus=${item.sourceId}` : null,
   };
 }
 

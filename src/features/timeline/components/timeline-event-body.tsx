@@ -1,4 +1,5 @@
 import { Flag, Repeat } from "lucide-react";
+import Link from "next/link";
 import { Fragment } from "react";
 
 import { cn } from "@/lib/cn";
@@ -20,7 +21,13 @@ export function TimelineEventBody({ title, view, isToday = false, balanceChip }:
         </span>
         <div className="tlx-event-body">
           <div className="tlx-event-title">
-            <strong>{title}</strong>
+            {view.href ? (
+              <Link className="evx-source-link" href={view.href}>
+                <strong>{title}</strong>
+              </Link>
+            ) : (
+              <strong>{title}</strong>
+            )}
             {isToday ? <span className="tlx-today-pill">Hoje</span> : null}
             {view.isInvoice ? <span className="tlx-tag tlx-tag-invoice">Vence</span> : null}
             {view.isRecurring ? (

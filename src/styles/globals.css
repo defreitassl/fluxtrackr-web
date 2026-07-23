@@ -6917,6 +6917,291 @@ a {
 
 /* ==================== [WS1] Eventos financeiros (evx-*) ==================== */
 
+.app-main:has(.evx-screen) {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
+.evx-screen {
+  display: flex;
+  min-height: calc(100vh - 64px);
+  flex-direction: column;
+}
+
+.evx-content {
+  display: grid;
+  align-content: start;
+  flex: 1;
+  gap: 12px;
+  padding: 20px 22px 26px;
+}
+
+.evx-screen .txx-chip[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--green) 30%, var(--line));
+  background: var(--green-soft);
+  color: var(--green-strong);
+}
+
+.evx-action-error {
+  margin: 0;
+  padding: 10px 13px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.evx-list {
+  display: grid;
+  gap: 10px;
+}
+
+.evx-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.evx-card-done {
+  opacity: 0.62;
+}
+
+.evx-focused {
+  border-color: color-mix(in srgb, var(--blue) 55%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 22%, transparent);
+}
+
+.evx-card-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.evx-card-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+}
+
+.evx-card-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.evx-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.evx-card-title strong {
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+.evx-status-pill {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.evx-status-pill[data-tone="blue"] {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.evx-status-pill[data-tone="green"] {
+  background: var(--green-soft);
+  color: var(--green-strong);
+}
+
+.evx-status-pill[data-tone="amber"] {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.evx-status-pill[data-tone="red"] {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.evx-status-pill[data-tone="neutral"] {
+  background: var(--soft);
+  color: var(--text-muted);
+}
+
+.evx-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.evx-card-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.evx-card-notes {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.evx-card-value {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.evx-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.evx-card-actions .txx-chip {
+  height: 30px;
+  font-size: 10.5px;
+}
+
+.evx-card-actions .txx-chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.evx-action-primary {
+  border-color: color-mix(in srgb, var(--green) 35%, var(--line));
+  background: var(--green-soft);
+  color: var(--green-strong);
+}
+
+.evx-action-danger {
+  color: var(--danger);
+}
+
+.evx-field-hint {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.evx-realize-summary {
+  display: grid;
+  margin: 0;
+  gap: 9px;
+}
+
+.evx-realize-summary > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.evx-realize-summary dt {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.evx-realize-summary dd {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.evx-result-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.evx-result-headline {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.evx-result-list {
+  display: grid;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  gap: 10px;
+  list-style: none;
+}
+
+.evx-result-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.evx-result-list li svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--text-muted);
+}
+
+/* Links "ver na tela de eventos" usados na Timeline e no Dashboard. */
+.evx-source-link {
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.evx-source-link:hover strong,
+.evx-source-link:focus-visible strong {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.evx-skeleton {
+  display: grid;
+  gap: 10px;
+}
+
+.evx-skeleton span {
+  display: block;
+  height: 86px;
+  border-radius: 16px;
+  background: linear-gradient(100deg, var(--soft) 40%, var(--surface-muted) 50%, var(--soft) 60%);
+  background-size: 200% 100%;
+  animation: tlx-shimmer 1.4s ease-in-out infinite;
+}
+
 /* ==================== [WS2] Recorrências (rcx-*) ==================== */
 
 /* ==================== [WS3] Metas (glx-*) ==================== */

@@ -52,7 +52,13 @@ export function UpcomingCommitmentsCard({ commitments }: UpcomingCommitmentsCard
                   <strong>{date.getUTCDate()}</strong>
                 </div>
                 <div className="dx-commitment-info">
-                  <strong>{commitment.title}</strong>
+                  {commitment.sourceType === "financial_event" ? (
+                    <Link className="evx-source-link" href={`/events?focus=${commitment.sourceId}`}>
+                      <strong>{commitment.title}</strong>
+                    </Link>
+                  ) : (
+                    <strong>{commitment.title}</strong>
+                  )}
                   <span>
                     {sourceLabels[commitment.sourceType] ?? commitment.sourceType}
                     {isIncome ? " · Receita esperada" : ""}
