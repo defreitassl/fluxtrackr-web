@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, MoreVertical, Pencil, Plus, SlidersHorizontal } from "lucide-react";
+import { Archive, ArrowLeftRight, MoreVertical, Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { Account } from "@/api/generated/client";
@@ -27,11 +27,13 @@ function AccountMenu({
   onEdit,
   onAdjust,
   onTransfer,
+  onArchive,
 }: {
   account: Account;
   onEdit: () => void;
   onAdjust: () => void;
   onTransfer: () => void;
+  onArchive: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -75,6 +77,10 @@ function AccountMenu({
             <ArrowLeftRight aria-hidden="true" size={13} />
             Transferir
           </button>
+          <button className="wlx-menu-danger" onClick={() => run(onArchive)} role="menuitem" type="button">
+            <Archive aria-hidden="true" size={13} />
+            Arquivar conta
+          </button>
         </div>
       ) : null}
     </div>
@@ -87,6 +93,7 @@ type WalletAccountsGridProps = {
   onEditAccount: (account: Account) => void;
   onAdjustAccount: (walletAccount: WalletAccount) => void;
   onTransferAccount: (account: Account) => void;
+  onArchiveAccount: (walletAccount: WalletAccount) => void;
 };
 
 export function WalletAccountsGrid({
@@ -95,6 +102,7 @@ export function WalletAccountsGrid({
   onEditAccount,
   onAdjustAccount,
   onTransferAccount,
+  onArchiveAccount,
 }: WalletAccountsGridProps) {
   return (
     <div className="wlx-accounts">
@@ -120,6 +128,7 @@ export function WalletAccountsGrid({
               <AccountMenu
                 account={account}
                 onAdjust={() => onAdjustAccount(walletAccount)}
+                onArchive={() => onArchiveAccount(walletAccount)}
                 onEdit={() => onEditAccount(account)}
                 onTransfer={() => onTransferAccount(account)}
               />

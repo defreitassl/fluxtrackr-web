@@ -213,4 +213,16 @@ describe("WalletScreen", () => {
     expect(within(dialog).getByRole("button", { name: /Conta/ })).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: /Cartão de crédito/ })).toBeInTheDocument();
   });
+
+  it("opens the archive-account confirmation from the account menu", () => {
+    mockWallet({ data: { accounts: [account], creditCards: [], invoices: [] } });
+
+    render(<WalletScreen />, { wrapper });
+
+    fireEvent.click(screen.getByRole("button", { name: "Ações de Nubank" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Arquivar conta" }));
+
+    expect(screen.getByRole("dialog", { name: "Arquivar conta" })).toBeInTheDocument();
+    expect(screen.getByText(/Arquivar não apaga dados/i)).toBeInTheDocument();
+  });
 });

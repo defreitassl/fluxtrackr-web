@@ -15,6 +15,7 @@ import type {
 import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
 import { CreateAccountDialog } from "@/features/wallet/accounts/components/create-account-dialog";
 import { EditAccountDialog } from "@/features/wallet/accounts/components/edit-account-dialog";
+import { ArchiveAccountDialog } from "@/features/wallet/accounts/components/archive-account-dialog";
 import { BalanceAdjustmentDialog } from "@/features/wallet/adjustments/components/balance-adjustment-dialog";
 import type { WalletAccount } from "@/features/wallet/api/get-wallet-overview";
 import { PayInvoiceDrawer } from "@/features/wallet/components/pay-invoice-drawer";
@@ -49,6 +50,7 @@ export function WalletScreen() {
   const [isCreateCardOpen, setIsCreateCardOpen] = useState(false);
   const [isCreatePurchaseOpen, setIsCreatePurchaseOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [archivingAccount, setArchivingAccount] = useState<WalletAccount | null>(null);
   const [editingCard, setEditingCard] = useState<CreditCard | null>(null);
   const [archivingCard, setArchivingCard] = useState<CreditCard | null>(null);
   const [archivingInvoice, setArchivingInvoice] = useState<CreditCardInvoiceWithInstallments | null>(null);
@@ -153,6 +155,11 @@ export function WalletScreen() {
   const handleAccountUpdated = (account: Account) => {
     setEditingAccount(null);
     showSuccess(`Conta ${account.name} atualizada.`);
+  };
+
+  const handleAccountArchived = () => {
+    setArchivingAccount(null);
+    showSuccess("Conta arquivada.");
   };
 
   const handleBalanceAdjusted = (response: CreateBalanceAdjustmentResponse) => {
@@ -283,6 +290,10 @@ export function WalletScreen() {
                     setSuccessMessage(null);
                     setAdjustingAccountId(walletAccount.account.id);
                   }}
+                  onArchiveAccount={(walletAccount) => {
+                    setSuccessMessage(null);
+                    setArchivingAccount(walletAccount);
+                  }}
                   onCreateAccount={() => {
                     setSuccessMessage(null);
                     setIsCreateOpen(true);
@@ -364,6 +375,14 @@ export function WalletScreen() {
           account={editingAccount}
           onClose={() => setEditingAccount(null)}
           onUpdated={handleAccountUpdated}
+          open
+        />
+      ) : null}
+      {archivingAccount ? (
+        <ArchiveAccountDialog
+          account={archivingAccount}
+          onArchived={handleAccountArchived}
+          onClose={() => setArchivingAccount(null)}
           open
         />
       ) : null}
