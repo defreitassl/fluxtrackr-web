@@ -8279,6 +8279,11 @@ a {
     --bnx-nav-space: calc(76px + env(safe-area-inset-bottom));
   }
 
+  html,
+  body {
+    overflow-x: clip;
+  }
+
   .app-sidebar {
     display: none;
   }
@@ -8396,14 +8401,11 @@ a {
     transform: translateY(-2px);
   }
 
-  .txx-table-card {
-    overflow: visible;
-  }
-
   .txx-table-scroll,
   .dx-table-scroll {
     width: 100%;
     overflow-x: auto;
+    contain: paint;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
   }
@@ -8460,7 +8462,7 @@ a {
   }
 
   .txx-drawer {
-    width: 100vw;
+    width: 100%;
     border-left: 0;
   }
 }

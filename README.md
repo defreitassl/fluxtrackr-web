@@ -1,6 +1,6 @@
 # FluxTrackr Web
 
-Frontend desktop do FluxTrackr. Inclui autenticação via BFF, App Shell e as
+Frontend do FluxTrackr. Inclui autenticação via BFF, App Shell e as
 telas operacionais de Dashboard, Timeline, Eventos, Recorrências, Planejamento,
 Metas, Carteira, Transações e Categorias. Os valores financeiros exibidos são
 consolidados pela API.
@@ -64,6 +64,18 @@ API.
 Orval; TanStack Query usa chave `['dashboard-overview']`, sem polling.
 Valores financeiros vêm diretamente da API; frontend não recalcula saldo,
 orçamento, meta diária, previsão ou faturas.
+
+## Navegação responsiva
+
+Em larguras de até 760px, a sidebar dá lugar à barra inferior com Início,
+Timeline, ação contextual, Carteira e Mais. A ação central dispara o mesmo
+evento contextual do CTA do cabeçalho; em telas sem CTA, abre Transações. O
+menu Mais é um sheet acessível com foco controlado, Escape e links para as
+demais áreas operacionais.
+
+Em 761px ou mais, a navegação existente é mantida. Em mobile, rails passam para
+baixo do conteúdo principal, drawers ocupam a largura útil e tabelas largas
+rolam apenas dentro do próprio contêiner.
 
 ## Timeline
 

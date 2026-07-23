@@ -125,6 +125,7 @@ export function MoreMenuSheet({ open, onClose, pathname, triggerRef, badges }: M
         aria-labelledby="bnx-more-menu-title"
         aria-modal="true"
         className="bnx-sheet"
+        id="bnx-more-menu"
         onMouseDown={(event) => event.stopPropagation()}
         ref={panelRef}
         role="dialog"

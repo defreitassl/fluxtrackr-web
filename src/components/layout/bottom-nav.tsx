@@ -85,7 +85,7 @@ function BottomNavRoute({ pathname }: BottomNavRouteProps) {
           <span>Carteira</span>
         </Link>
         <button
-          aria-controls="bnx-more-menu-title"
+          aria-controls="bnx-more-menu"
           aria-expanded={moreOpen}
           className={cn("bnx-slot", moreOpen && "bnx-slot-active")}
           onClick={() => setMoreOpen((value) => !value)}
