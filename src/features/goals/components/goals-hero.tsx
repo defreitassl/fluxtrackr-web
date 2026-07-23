@@ -3,8 +3,8 @@
 import { CalendarClock, Target } from "lucide-react";
 
 import type { FinancialGoalsOverview } from "@/api/generated/client";
-import { formatGoalProgress } from "@/features/goals/lib/goal-presentation";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatGoalDate, formatGoalProgress } from "@/features/goals/lib/goal-presentation";
+import { formatCurrency } from "@/lib/format";
 
 type GoalsHeroProps = {
   overview: FinancialGoalsOverview;
@@ -56,8 +56,9 @@ export function GoalsHero({ overview }: GoalsHeroProps) {
         <span>
           {nextDeadline ? (
             <>
-              Próximo prazo: <strong>{nextDeadline.name}</strong> em {formatDate(nextDeadline.targetDate)}{" "}
-              — faltam {formatCurrency(nextDeadline.remainingAmount)}.
+              Próximo prazo: <strong>{nextDeadline.name}</strong> em{" "}
+              {formatGoalDate(nextDeadline.targetDate)} — faltam{" "}
+              {formatCurrency(nextDeadline.remainingAmount)}.
             </>
           ) : (
             "Nenhum prazo à vista — defina datas nas metas para acompanhar o ritmo."

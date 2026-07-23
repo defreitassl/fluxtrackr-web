@@ -28,10 +28,15 @@ export function formatGoalProgress(value: string | number): string {
   return `${Number.isFinite(progress) ? Math.round(progress) : 0}%`;
 }
 
+/** Formata só a parte de data (evita recuar um dia no fuso local). */
+export function formatGoalDate(targetDate: string): string {
+  return formatDate(targetDate.slice(0, 10));
+}
+
 /** Rótulo de prazo: "Faltam X dias", atraso ou "Sem prazo". */
 export function goalDeadlineLabel(goal: FinancialGoal): string {
   if (!goal.targetDate) return "Sem prazo";
-  const dateLabel = formatDate(goal.targetDate);
+  const dateLabel = formatGoalDate(goal.targetDate);
   if (goal.status === "completed" || goal.status === "canceled") return `Prazo: ${dateLabel}`;
   if (goal.isOverdue) return `Atrasada — o prazo era ${dateLabel}`;
   if (goal.daysRemaining === 0) return `Termina hoje (${dateLabel})`;
