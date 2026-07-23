@@ -103,111 +103,113 @@ export function TransactionsTable({
         </div>
       ) : null}
 
-      <table className="txx-table">
-        <thead>
-          <tr>
-            <th className="txx-col-check" scope="col">
-              <button
-                aria-checked={allSelected}
-                aria-label={allSelected ? "Desmarcar todas" : "Selecionar todas"}
-                className="txx-checkbox"
-                onClick={onToggleAll}
-                role="checkbox"
-                type="button"
-              >
-                {allSelected ? <Check aria-hidden="true" size={11} strokeWidth={3} /> : null}
-              </button>
-            </th>
-            <th scope="col">Data</th>
-            <th scope="col">Movimentação</th>
-            <th className="txx-th-category" scope="col">
-              Categoria
-            </th>
-            <th className="txx-th-account" scope="col">
-              Conta
-            </th>
-            <th className="txx-th-method" scope="col">
-              Método
-            </th>
-            <th className="txx-col-amount" scope="col">
-              Valor
-            </th>
-            <th className="txx-col-edit" scope="col">
-              <span className="sr-only">Ações</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((transaction) => {
-            const isSelected = selected.has(transaction.id);
-            return (
-              <tr
-                className={cn(isSelected && "txx-row-selected")}
-                key={transaction.id}
-                onClick={() => onEdit(transaction)}
-              >
-                <td className="txx-col-check">
-                  <button
-                    aria-checked={isSelected}
-                    aria-label={`Selecionar ${transaction.description}`}
-                    className="txx-checkbox"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onToggleRow(transaction.id);
-                    }}
-                    role="checkbox"
-                    type="button"
-                  >
-                    {isSelected ? <Check aria-hidden="true" size={11} strokeWidth={3} /> : null}
-                  </button>
-                </td>
-                <td className="txx-td-date">{dayFormatter.format(new Date(transaction.occurredAt))}</td>
-                <td>
-                  <div className="txx-mov">
-                    <RowIcon categoriesById={categoriesById} transaction={transaction} />
-                    <strong>{transaction.description}</strong>
-                  </div>
-                </td>
-                <td className="txx-td-category txx-td-muted">
-                  {transactionCategoryLabel(transaction.categoryId, categoriesById)}
-                </td>
-                <td className="txx-td-account txx-td-muted">
-                  {transactionAccountLabel(transaction.accountId, accountsById)}
-                </td>
-                <td className="txx-td-method">
-                  {transaction.paymentMethod ? (
-                    <span className="dx-pill">{paymentMethodLabel(transaction.paymentMethod)}</span>
-                  ) : (
-                    <span className="txx-td-muted">—</span>
-                  )}
-                </td>
-                <td className="txx-col-amount">
-                  <span
-                    className={`dx-amount ${
-                      transaction.type === "income" ? "dx-amount-positive" : "dx-amount-negative"
-                    }`}
-                  >
-                    {transaction.type === "income" ? "+" : "−"} {formatCurrency(transaction.amount)}
-                  </span>
-                </td>
-                <td className="txx-col-edit">
-                  <button
-                    aria-label={`Editar ${transaction.description}`}
-                    className="txx-edit-button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onEdit(transaction);
-                    }}
-                    type="button"
-                  >
-                    <Pencil aria-hidden="true" size={14} />
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="txx-table-scroll" tabIndex={0}>
+        <table className="txx-table">
+          <thead>
+            <tr>
+              <th className="txx-col-check" scope="col">
+                <button
+                  aria-checked={allSelected}
+                  aria-label={allSelected ? "Desmarcar todas" : "Selecionar todas"}
+                  className="txx-checkbox"
+                  onClick={onToggleAll}
+                  role="checkbox"
+                  type="button"
+                >
+                  {allSelected ? <Check aria-hidden="true" size={11} strokeWidth={3} /> : null}
+                </button>
+              </th>
+              <th scope="col">Data</th>
+              <th scope="col">Movimentação</th>
+              <th className="txx-th-category" scope="col">
+                Categoria
+              </th>
+              <th className="txx-th-account" scope="col">
+                Conta
+              </th>
+              <th className="txx-th-method" scope="col">
+                Método
+              </th>
+              <th className="txx-col-amount" scope="col">
+                Valor
+              </th>
+              <th className="txx-col-edit" scope="col">
+                <span className="sr-only">Ações</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((transaction) => {
+              const isSelected = selected.has(transaction.id);
+              return (
+                <tr
+                  className={cn(isSelected && "txx-row-selected")}
+                  key={transaction.id}
+                  onClick={() => onEdit(transaction)}
+                >
+                  <td className="txx-col-check">
+                    <button
+                      aria-checked={isSelected}
+                      aria-label={`Selecionar ${transaction.description}`}
+                      className="txx-checkbox"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onToggleRow(transaction.id);
+                      }}
+                      role="checkbox"
+                      type="button"
+                    >
+                      {isSelected ? <Check aria-hidden="true" size={11} strokeWidth={3} /> : null}
+                    </button>
+                  </td>
+                  <td className="txx-td-date">{dayFormatter.format(new Date(transaction.occurredAt))}</td>
+                  <td>
+                    <div className="txx-mov">
+                      <RowIcon categoriesById={categoriesById} transaction={transaction} />
+                      <strong>{transaction.description}</strong>
+                    </div>
+                  </td>
+                  <td className="txx-td-category txx-td-muted">
+                    {transactionCategoryLabel(transaction.categoryId, categoriesById)}
+                  </td>
+                  <td className="txx-td-account txx-td-muted">
+                    {transactionAccountLabel(transaction.accountId, accountsById)}
+                  </td>
+                  <td className="txx-td-method">
+                    {transaction.paymentMethod ? (
+                      <span className="dx-pill">{paymentMethodLabel(transaction.paymentMethod)}</span>
+                    ) : (
+                      <span className="txx-td-muted">—</span>
+                    )}
+                  </td>
+                  <td className="txx-col-amount">
+                    <span
+                      className={`dx-amount ${
+                        transaction.type === "income" ? "dx-amount-positive" : "dx-amount-negative"
+                      }`}
+                    >
+                      {transaction.type === "income" ? "+" : "−"} {formatCurrency(transaction.amount)}
+                    </span>
+                  </td>
+                  <td className="txx-col-edit">
+                    <button
+                      aria-label={`Editar ${transaction.description}`}
+                      className="txx-edit-button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onEdit(transaction);
+                      }}
+                      type="button"
+                    >
+                      <Pencil aria-hidden="true" size={14} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {isPending ? (
         <div aria-busy="true" aria-label="Carregando movimentações" className="txx-shimmer-list" role="status">

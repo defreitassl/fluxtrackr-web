@@ -1,13 +1,14 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftRight, ChevronDown, MailOpen, PanelLeft, Plus, RefreshCw, Search } from "lucide-react";
+import { ArrowLeftRight, ChevronDown, PanelLeft, Plus, RefreshCw, Search } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { NotificationButton } from "@/components/layout/notification-button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { getContextualCta } from "@/components/layout/contextual-cta";
 import { useGlobalSearch } from "@/providers/search-provider";
 
 const searchPlaceholders: Record<string, string> = {
@@ -57,32 +58,6 @@ function getPageTitle(pathname: string) {
  * `window.addEventListener`. Rotas sem entrada usam o fallback (link para
  * nova movimentação).
  */
-const headerCtas: Array<{ prefix: string; label: string; event: string; icon: typeof Plus }> = [
-  { prefix: "/wallet", label: "Adicionar", event: "fluxtrackr:wallet-add", icon: Plus },
-  {
-    prefix: "/notifications",
-    label: "Marcar todas como lidas",
-    event: "fluxtrackr:notifications-read-all",
-    icon: MailOpen,
-  },
-  { prefix: "/planning", label: "Novo orçamento", event: "fluxtrackr:new-budget", icon: Plus },
-  { prefix: "/categories", label: "Nova categoria", event: "fluxtrackr:new-category", icon: Plus },
-  {
-    prefix: "/transactions",
-    label: "Nova movimentação",
-    event: "fluxtrackr:new-transaction",
-    icon: Plus,
-  },
-  { prefix: "/events", label: "Novo evento", event: "fluxtrackr:new-event", icon: Plus },
-  {
-    prefix: "/recurrences",
-    label: "Nova recorrência",
-    event: "fluxtrackr:new-recurrence",
-    icon: Plus,
-  },
-  { prefix: "/goals", label: "Nova meta", event: "fluxtrackr:new-goal", icon: Plus },
-];
-
 function getCurrentPeriodLabel() {
   const label = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date());
   return label.charAt(0).toUpperCase() + label.slice(1).replace(" de ", " ");
@@ -102,7 +77,7 @@ export function AppHeader({ onToggleSidebar, sidebarCollapsed }: AppHeaderProps)
   const searchPlaceholder =
     Object.entries(searchPlaceholders).find(([route]) => pathname.startsWith(route))?.[1] ??
     "Buscar transações, contas ou categorias";
-  const cta = headerCtas.find((entry) => pathname.startsWith(entry.prefix));
+  const cta = getContextualCta(pathname);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

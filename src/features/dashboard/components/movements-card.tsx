@@ -124,57 +124,59 @@ export function MovementsCard({ monthWindow: window }: MovementsCardProps) {
         </label>
       </div>
 
-      <table className="dx-table">
-        <thead>
-          <tr>
-            <th scope="col">Data</th>
-            <th scope="col">Movimentação</th>
-            <th className="dx-th-category" scope="col">
-              Categoria
-            </th>
-            <th className="dx-th-account" scope="col">
-              Conta
-            </th>
-            <th className="dx-th-method" scope="col">
-              Método
-            </th>
-            <th scope="col">Valor</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((transaction) => (
-            <tr key={transaction.id}>
-              <td className="dx-td-date">{dayFormatter.format(new Date(transaction.occurredAt))}</td>
-              <td>
-                <div className="dx-mov">
-                  <MovementIcon transaction={transaction} />
-                  <strong>{transaction.description}</strong>
-                </div>
-              </td>
-              <td className="dx-td-category dx-td-muted">
-                {transactionCategoryLabel(transaction.categoryId, categoriesById)}
-              </td>
-              <td className="dx-td-account dx-td-muted">
-                {transactionAccountLabel(transaction.accountId, accountsById)}
-              </td>
-              <td className="dx-td-method">
-                <span className="dx-pill">
-                  {transaction.paymentMethod ? methodLabels[transaction.paymentMethod] : "—"}
-                </span>
-              </td>
-              <td>
-                <span
-                  className={`dx-amount ${
-                    movementTone(transaction) === "positive" ? "dx-amount-positive" : "dx-amount-negative"
-                  }`}
-                >
-                  {formatSignedCurrency(transaction.amount, movementTone(transaction))}
-                </span>
-              </td>
+      <div className="dx-table-scroll" tabIndex={0}>
+        <table className="dx-table">
+          <thead>
+            <tr>
+              <th scope="col">Data</th>
+              <th scope="col">Movimentação</th>
+              <th className="dx-th-category" scope="col">
+                Categoria
+              </th>
+              <th className="dx-th-account" scope="col">
+                Conta
+              </th>
+              <th className="dx-th-method" scope="col">
+                Método
+              </th>
+              <th scope="col">Valor</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((transaction) => (
+              <tr key={transaction.id}>
+                <td className="dx-td-date">{dayFormatter.format(new Date(transaction.occurredAt))}</td>
+                <td>
+                  <div className="dx-mov">
+                    <MovementIcon transaction={transaction} />
+                    <strong>{transaction.description}</strong>
+                  </div>
+                </td>
+                <td className="dx-td-category dx-td-muted">
+                  {transactionCategoryLabel(transaction.categoryId, categoriesById)}
+                </td>
+                <td className="dx-td-account dx-td-muted">
+                  {transactionAccountLabel(transaction.accountId, accountsById)}
+                </td>
+                <td className="dx-td-method">
+                  <span className="dx-pill">
+                    {transaction.paymentMethod ? methodLabels[transaction.paymentMethod] : "—"}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    className={`dx-amount ${
+                      movementTone(transaction) === "positive" ? "dx-amount-positive" : "dx-amount-negative"
+                    }`}
+                  >
+                    {formatSignedCurrency(transaction.amount, movementTone(transaction))}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {rows.length === 0 ? (
         <div className="dx-table-empty">

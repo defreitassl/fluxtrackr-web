@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { SessionExpiryListener } from "@/components/layout/session-expiry-listener";
 
 const SIDEBAR_COOKIE = "fluxtrackr_sidebar";
@@ -32,6 +33,7 @@ export function AppShell({ children, email, initialCollapsed = false }: AppShell
         <AppHeader onToggleSidebar={toggleSidebar} sidebarCollapsed={collapsed} />
         <main className="app-main">{children}</main>
       </div>
+      <BottomNav />
     </div>
   );
 }
