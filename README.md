@@ -1,9 +1,9 @@
 # FluxTrackr Web
 
 Frontend desktop do FluxTrackr. Inclui autenticação via BFF, App Shell e as
-telas operacionais de Dashboard, Timeline, Planejamento, Carteira, Transações,
-Categorias e Recorrências. Os valores financeiros exibidos são consolidados
-pela API.
+telas operacionais de Dashboard, Timeline, Eventos, Recorrências, Planejamento,
+Metas, Carteira, Transações e Categorias. Os valores financeiros exibidos são
+consolidados pela API.
 
 ## Stack
 
@@ -271,10 +271,11 @@ essa seção é histórica e não recalcula fatura, limite ou saldo.
 
 ## Prontidão para deploy
 
-O recorte desktop considerado para fechamento reúne as sete telas principais:
-Dashboard, Timeline, Planejamento, Carteira, Transações, Categorias e
-Recorrências. O deploy não é consequência automática de concluir uma tela; ele
-só é iniciado após a revisão integrada desse conjunto e de suas validações.
+O recorte desktop considerado para fechamento reúne as nove telas principais:
+Dashboard, Timeline, Eventos, Recorrências, Planejamento, Metas, Carteira,
+Transações e Categorias. O deploy não é consequência automática de concluir
+uma tela; ele só é iniciado após a revisão integrada desse conjunto e de suas
+validações.
 
 ## Validação local integrada
 
