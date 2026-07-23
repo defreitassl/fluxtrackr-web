@@ -1,8 +1,9 @@
 # FluxTrackr Web
 
-Frontend desktop do FluxTrackr. Inclui autenticação via BFF, App Shell e seis
-telas principais: Dashboard, Timeline, Planejamento, Carteira, Transações e
-Categorias. Os valores financeiros exibidos são consolidados pela API.
+Frontend desktop do FluxTrackr. Inclui autenticação via BFF, App Shell e as
+telas operacionais de Dashboard, Timeline, Planejamento, Carteira, Transações,
+Categorias e Recorrências. Os valores financeiros exibidos são consolidados
+pela API.
 
 ## Stack
 
@@ -112,6 +113,21 @@ arquivar um orçamento invalida `['category-budget-overview']`,
 `['category-budgets']`, `['financial-timeline']` e `['dashboard-overview']`,
 sem atualização otimista.
 
+## Recorrências
+
+`/recurrences` reúne assinaturas, gastos fixos e rendas fixas. Assinaturas usam
+`GET /subscriptions`, seu summary consolidado e as cobranças persistidas;
+gastos e rendas usam os templates e as ocorrências fixas retornadas pela API.
+O tile de fixos reutiliza `GET /monthly-summary`, sem somar templates no
+cliente.
+
+O rail mostra somente pendências de hoje até 45 dias UTC, mescladas por data e
+filtradas pelos templates ainda ativos. Realizar uma cobrança de assinatura
+cria uma transação ou compra no cartão pela API; realizar uma ocorrência fixa
+sempre cria uma transação em conta. Cancelamentos, arquivos e realizações não
+fazem atualização otimista: as mutations invalidam as queries financeiras
+relacionadas para receber o estado consolidado do backend.
+
 ## Transações
 
 `/transactions` lista a resposta completa de `GET /transactions`, sem paginação
@@ -207,9 +223,10 @@ A Carteira permite **criar** e **editar metadados** de contas:
   `['dashboard-overview']`; não há atualização otimista de valores financeiros.
   A conta criada/editada permanece selecionada após o refetch e o sucesso é
   comunicado por feedback inline com `role="status"`.
-- **Arquivamento fora do escopo:** a API atual apenas define `isActive=false` e
-  ainda não possui política consolidada para dependências ativas, então nenhuma
-  ação de arquivar ou excluir é exposta.
+- **Arquivamento:** o menu da conta abre uma confirmação explícita para `DELETE
+  /accounts/{id}`. A operação é soft archive (`isActive:false`), não apaga o
+  saldo nem o histórico e invalida a Carteira, Dashboard, seletores de conta,
+  previsão e Timeline.
 
 ### Ajuste de saldo e histórico
 
@@ -220,14 +237,12 @@ anterior e a diferença; o Web não calcula diferença, não cria transação e 
 faz atualização otimista. O formulário aceita saldo negativo, zero e o mesmo
 saldo atual.
 
-O histórico usa `GET /accounts/{accountId}/balance-adjustments`, preserva a
-ordem da API e exibe inicialmente até cinco itens. Depois de um ajuste, a
-mutation invalida `['account-balance-adjustments', accountId]`,
-`['wallet-overview']`, `['dashboard-overview']` e `['financial-timeline']`.
-
-Em erro de atualização, o histórico preserva a lista, exibe um alerta local e
-permite tentar novamente; carregamentos de atualização também são discretos e
-não substituem os dados. O estado de “Mostrar todos” é isolado por conta.
+O menu **Histórico da conta** abre um drawer somente leitura que mescla
+`GET /account-transfers?accountId=` e
+`GET /accounts/{accountId}/balance-adjustments` em ordem decrescente. A direção
+da transferência é relativa à conta aberta; ajustes mostram os snapshots de
+saldo anterior e novo. O drawer mostra até 50 itens inicialmente e permite
+“Mostrar mais”, sem recalcular diferenças ou saldos no cliente.
 
 ### Transferências entre contas
 
@@ -238,9 +253,9 @@ não envia `occurredAt`, não compara saldo disponível e não calcula saldos.
 Transferência não é receita nem despesa e não cria `Transaction`.
 
 `GET /account-transfers?accountId=` alimenta o histórico da conta selecionada
-pela chave `['account-transfers', { accountId }]`. Ele preserva a ordem da API,
-mostra até cinco itens inicialmente e identifica cada item como enviada ou
-recebida, com a conta oposta ou o fallback para conta indisponível. Após sucesso
+a chave `['account-transfers', { accountId }]`. Ele preserva a ordem da API e
+identifica cada item como enviada ou recebida, com a conta oposta ou o fallback
+para conta indisponível. Após sucesso
 a mutation invalida `['account-transfers']`, `['wallet-overview']`,
 `['dashboard-overview']` e `['financial-timeline']`; não há update otimista.
 
@@ -249,12 +264,17 @@ ou ponto, mas normalizam para `Decimal(12,2)` (`-9.999.999.999,99` a
 `9.999.999.999,99`) antes de enviar. O Web continua somente apresentando os
 saldos retornados pela API.
 
+O painel da fatura também consulta `GET /credit-card-purchases?creditCardId=`
+para listar as compras do cartão em ordem retornada pela API. Cada compra mostra
+valor total, número de parcelas e um accordion com as parcelas persistidas;
+essa seção é histórica e não recalcula fatura, limite ou saldo.
+
 ## Prontidão para deploy
 
-O recorte desktop considerado para fechamento reúne as seis telas principais:
-Dashboard, Timeline, Planejamento, Carteira, Transações e Categorias. O deploy
-não é consequência automática de concluir uma tela; ele só é iniciado após a
-revisão integrada desse conjunto e de suas validações.
+O recorte desktop considerado para fechamento reúne as sete telas principais:
+Dashboard, Timeline, Planejamento, Carteira, Transações, Categorias e
+Recorrências. O deploy não é consequência automática de concluir uma tela; ele
+só é iniciado após a revisão integrada desse conjunto e de suas validações.
 
 ## Validação local integrada
 
