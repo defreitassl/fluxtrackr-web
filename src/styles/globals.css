@@ -7204,6 +7204,377 @@ a {
 
 /* ==================== [WS2] Recorrências (rcx-*) ==================== */
 
+.app-main:has(.rcx-screen) {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
+.rcx-screen {
+  display: flex;
+  height: calc(100vh - 64px);
+  flex-direction: column;
+}
+
+.rcx-body {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) 336px;
+}
+
+.rcx-main {
+  padding: 22px 26px 30px;
+  overflow-y: auto;
+}
+
+.rcx-main > .mutation-feedback {
+  margin: 0 0 14px;
+}
+
+.rcx-hero {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.rcx-hero-tile {
+  position: relative;
+  min-height: 136px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.rcx-hero-tile > span:not(.rcx-hero-icon) {
+  display: block;
+  padding-right: 26px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.rcx-hero-tile strong {
+  display: block;
+  margin-top: 14px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  letter-spacing: -0.035em;
+}
+
+.rcx-hero-tile small {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.rcx-hero-icon {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--green) 22%, var(--line));
+  border-radius: 9px;
+  background: var(--green-soft);
+  color: var(--green-strong);
+}
+
+.rcx-content-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.rcx-tabs,
+.rcx-destination-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.rcx-tabs button,
+.rcx-destination-tabs button {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.rcx-tabs button[aria-selected="true"],
+.rcx-destination-tabs button[aria-pressed="true"] {
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 7%);
+  color: var(--green-strong);
+}
+
+.rcx-card-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rcx-card {
+  padding: 17px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.rcx-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.rcx-card-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--green-soft);
+  color: var(--green-strong);
+}
+
+.rcx-card-head > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.rcx-card-head strong,
+.rcx-card-head span:not(.rcx-card-icon):not(.rcx-status-pill) {
+  display: block;
+}
+
+.rcx-card-head strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rcx-card-head > div span {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.rcx-status-pill {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--green) 28%, var(--line));
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--green-strong);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.rcx-card-amount {
+  margin: 17px 0 14px;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+}
+
+.rcx-card-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px 16px;
+  margin: 0;
+}
+
+.rcx-card-details div { min-width: 0; }
+
+.rcx-card-details dt {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.rcx-card-details dd {
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rcx-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 17px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+
+.rcx-card-actions button {
+  display: inline-flex;
+  height: 30px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.rcx-card-actions button:hover { background: var(--surface-muted); }
+.rcx-card-actions .rcx-danger-action { color: var(--danger); }
+
+.rcx-rail {
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  padding: 20px;
+  border-left: 1px solid var(--line);
+  background: var(--surface-muted);
+  overflow-y: auto;
+}
+
+.rcx-rail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--green-strong);
+}
+
+.rcx-rail-head span,
+.rcx-rail-head strong { display: block; }
+.rcx-rail-head span { color: var(--text-muted); font-size: 9px; font-weight: 800; letter-spacing: 0.06em; }
+.rcx-rail-head strong { margin-top: 4px; color: var(--text); font-size: 12px; }
+
+.rcx-rail-list { display: grid; gap: 8px; }
+
+.rcx-rail-item {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 9px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.rcx-rail-item-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--soft);
+  color: var(--text-secondary);
+}
+
+.rcx-rail-item-copy { min-width: 0; }
+.rcx-rail-item-copy strong,
+.rcx-rail-item-copy span,
+.rcx-rail-item-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rcx-rail-item-copy strong { font-size: 11px; }
+.rcx-rail-item-copy span { margin-top: 2px; color: var(--text-muted); font-size: 9px; }
+.rcx-rail-item-copy small { margin-top: 4px; color: var(--text-secondary); font-size: 9px; }
+.rcx-rail-item > b { align-self: start; color: var(--danger); font-family: var(--font-mono); font-size: 11px; }
+.rcx-rail-item > b.rcx-income { color: var(--green-strong); }
+
+.rcx-rail-actions {
+  display: flex;
+  grid-column: 2 / -1;
+  gap: 6px;
+}
+
+.rcx-rail-actions button,
+.rcx-show-all,
+.rcx-rail-state button {
+  border: 0;
+  background: transparent;
+  color: var(--green-strong);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.rcx-rail-cancel { color: var(--danger) !important; }
+.rcx-show-all { justify-self: start; padding: 4px 0; }
+
+.rcx-rail-state {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 15px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  color: var(--text-muted);
+}
+
+.rcx-rail-state p { margin: 0; font-size: 11px; line-height: 1.4; }
+.rcx-rail-state button { display: inline-flex; align-items: center; gap: 5px; }
+
+.rcx-rail-skeleton,
+.rcx-skeleton { display: grid; gap: 10px; }
+.rcx-rail-skeleton span,
+.rcx-skeleton span {
+  display: block;
+  min-height: 64px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--soft) 25%, var(--surface-muted) 42%, var(--soft) 62%);
+  background-size: 260% 100%;
+  animation: tlx-shimmer 1.25s infinite;
+}
+
+.rcx-skeleton { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rcx-skeleton span { min-height: 158px; }
+
+.rcx-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.rcx-check input { accent-color: var(--green); }
+
+.rcx-inherited-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.rcx-result-panel { text-align: center; }
+.rcx-result-panel > svg { margin-top: 8px; }
+
 /* ==================== [WS3] Metas (glx-*) ==================== */
 
 .app-main:has(.glx-screen) {
@@ -7602,5 +7973,152 @@ a {
 }
 
 /* ==================== [WS4+WS5] Carteira: arquivar conta + históricos (wlx-history-*, wlx-purchases-*) ==================== */
+
+.wlx-history-list {
+  display: grid;
+  gap: 9px;
+}
+
+.wlx-history-item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.wlx-history-item:last-child { border-bottom: 0; }
+
+.wlx-history-icon,
+.wlx-purchase-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--text-secondary);
+}
+
+.wlx-history-item > div:nth-child(2) { min-width: 0; }
+.wlx-history-item strong,
+.wlx-history-item span,
+.wlx-history-item small { display: block; }
+.wlx-history-item strong { font-size: 12px; }
+.wlx-history-item > div:nth-child(2) > span { margin-top: 3px; color: var(--text-muted); font-size: 10px; }
+.wlx-history-item small { margin-top: 4px; overflow: hidden; color: var(--text-secondary); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+
+.wlx-history-value { text-align: right; }
+.wlx-history-value b,
+.wlx-history-value span { display: block; }
+.wlx-history-value b { font-family: var(--font-mono); font-size: 12px; }
+.wlx-history-value span { margin-top: 4px; color: var(--text-muted); font-size: 9px; white-space: nowrap; }
+.wlx-history-positive { color: var(--green-strong); }
+.wlx-history-negative { color: var(--danger); }
+
+.wlx-history-state {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 20px 2px;
+  color: var(--text-muted);
+}
+
+.wlx-history-state strong { color: var(--text); font-size: 13px; }
+.wlx-history-state p { margin: 0; font-size: 11px; line-height: 1.45; }
+
+.wlx-history-more {
+  justify-self: center;
+  margin-top: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--green-strong);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.wlx-history-skeleton,
+.wlx-purchases-skeleton {
+  display: grid;
+  gap: 9px;
+}
+
+.wlx-history-skeleton span,
+.wlx-purchases-skeleton span {
+  display: block;
+  height: 56px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--soft) 25%, var(--surface-muted) 42%, var(--soft) 62%);
+  background-size: 260% 100%;
+  animation: tlx-shimmer 1.25s infinite;
+}
+
+.wlx-purchases-section {
+  margin-top: 18px;
+  padding-top: 17px;
+  border-top: 1px solid var(--line);
+}
+
+.wlx-purchases-list { display: grid; }
+
+.wlx-purchase-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.wlx-purchase-copy { min-width: 0; }
+.wlx-purchase-copy strong,
+.wlx-purchase-copy span { display: block; }
+.wlx-purchase-copy strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.wlx-purchase-copy span { margin-top: 3px; color: var(--text-muted); font-size: 10px; }
+.wlx-purchase-row > b { font-family: var(--font-mono); font-size: 12px; }
+
+.wlx-installments {
+  grid-column: 2 / -1;
+  margin-top: 1px;
+}
+
+.wlx-installments summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--green-strong);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 750;
+  list-style: none;
+}
+
+.wlx-installments summary::-webkit-details-marker { display: none; }
+.wlx-installments[open] summary svg { transform: rotate(180deg); }
+
+.wlx-installments > div {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px 9px;
+  border-radius: 9px;
+  background: var(--surface-muted);
+}
+
+.wlx-installments p {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 9px;
+}
+
+.wlx-purchases-state {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
 
 /* ==================== [WS6] Mobile: bottom nav (bnx-*) + varredura responsiva ==================== */

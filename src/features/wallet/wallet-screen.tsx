@@ -15,6 +15,7 @@ import type {
 import { useDashboardOverview } from "@/features/dashboard/queries/use-dashboard-overview";
 import { CreateAccountDialog } from "@/features/wallet/accounts/components/create-account-dialog";
 import { EditAccountDialog } from "@/features/wallet/accounts/components/edit-account-dialog";
+import { ArchiveAccountDialog } from "@/features/wallet/accounts/components/archive-account-dialog";
 import { BalanceAdjustmentDialog } from "@/features/wallet/adjustments/components/balance-adjustment-dialog";
 import type { WalletAccount } from "@/features/wallet/api/get-wallet-overview";
 import { PayInvoiceDrawer } from "@/features/wallet/components/pay-invoice-drawer";
@@ -28,6 +29,7 @@ import { CreateCreditCardDialog } from "@/features/wallet/credit-cards/component
 import { CreateCreditCardPurchaseDialog } from "@/features/wallet/credit-cards/components/create-credit-card-purchase-dialog";
 import { EditCreditCardDialog } from "@/features/wallet/credit-cards/components/edit-credit-card-dialog";
 import { AccountTransferDialog } from "@/features/wallet/transfers/components/account-transfer-dialog";
+import { AccountHistoryDrawer } from "@/features/wallet/history/components/account-history-drawer";
 import { useCurrentWalletPeriod } from "@/features/wallet/hooks/use-current-wallet-period";
 import { resolveWalletCardSelection } from "@/features/wallet/lib/wallet-selection";
 import { useWalletOverview } from "@/features/wallet/queries/use-wallet-overview";
@@ -49,12 +51,14 @@ export function WalletScreen() {
   const [isCreateCardOpen, setIsCreateCardOpen] = useState(false);
   const [isCreatePurchaseOpen, setIsCreatePurchaseOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [archivingAccount, setArchivingAccount] = useState<WalletAccount | null>(null);
   const [editingCard, setEditingCard] = useState<CreditCard | null>(null);
   const [archivingCard, setArchivingCard] = useState<CreditCard | null>(null);
   const [archivingInvoice, setArchivingInvoice] = useState<CreditCardInvoiceWithInstallments | null>(null);
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [adjustingAccountId, setAdjustingAccountId] = useState<string | null>(null);
   const [transferringAccountId, setTransferringAccountId] = useState<string | null>(null);
+  const [historyAccountId, setHistoryAccountId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -115,6 +119,7 @@ export function WalletScreen() {
 
   const adjustingAccount = data?.accounts.find(({ account }) => account.id === adjustingAccountId);
   const transferringAccount = data?.accounts.find(({ account }) => account.id === transferringAccountId);
+  const historyAccount = data?.accounts.find(({ account }) => account.id === historyAccountId)?.account ?? null;
   const payingInvoice = data?.invoices.find((invoice) => invoice.id === payingInvoiceId) ?? null;
   const payingCard = data?.creditCards.find((card) => card.id === payingInvoice?.creditCardId) ?? null;
 
@@ -153,6 +158,11 @@ export function WalletScreen() {
   const handleAccountUpdated = (account: Account) => {
     setEditingAccount(null);
     showSuccess(`Conta ${account.name} atualizada.`);
+  };
+
+  const handleAccountArchived = () => {
+    setArchivingAccount(null);
+    showSuccess("Conta arquivada.");
   };
 
   const handleBalanceAdjusted = (response: CreateBalanceAdjustmentResponse) => {
@@ -283,6 +293,10 @@ export function WalletScreen() {
                     setSuccessMessage(null);
                     setAdjustingAccountId(walletAccount.account.id);
                   }}
+                  onArchiveAccount={(walletAccount) => {
+                    setSuccessMessage(null);
+                    setArchivingAccount(walletAccount);
+                  }}
                   onCreateAccount={() => {
                     setSuccessMessage(null);
                     setIsCreateOpen(true);
@@ -290,6 +304,10 @@ export function WalletScreen() {
                   onEditAccount={(account) => {
                     setSuccessMessage(null);
                     setEditingAccount(account);
+                  }}
+                  onHistoryAccount={(account) => {
+                    setSuccessMessage(null);
+                    setHistoryAccountId(account.id);
                   }}
                   onTransferAccount={(account) => {
                     setSuccessMessage(null);
@@ -367,6 +385,14 @@ export function WalletScreen() {
           open
         />
       ) : null}
+      {archivingAccount ? (
+        <ArchiveAccountDialog
+          account={archivingAccount}
+          onArchived={handleAccountArchived}
+          onClose={() => setArchivingAccount(null)}
+          open
+        />
+      ) : null}
       {adjustingAccount ? (
         <BalanceAdjustmentDialog
           account={adjustingAccount.account}
@@ -385,6 +411,12 @@ export function WalletScreen() {
           open
         />
       ) : null}
+      <AccountHistoryDrawer
+        account={historyAccount}
+        accounts={data?.accounts ?? []}
+        onClose={() => setHistoryAccountId(null)}
+        open={historyAccount !== null}
+      />
       {isCreateCardOpen ? (
         <CreateCreditCardDialog
           accounts={data?.accounts ?? []}

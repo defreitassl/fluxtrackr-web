@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, MoreVertical, Pencil, Plus, SlidersHorizontal } from "lucide-react";
+import { Archive, ArrowLeftRight, History, MoreVertical, Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { Account } from "@/api/generated/client";
@@ -27,11 +27,15 @@ function AccountMenu({
   onEdit,
   onAdjust,
   onTransfer,
+  onArchive,
+  onHistory,
 }: {
   account: Account;
   onEdit: () => void;
   onAdjust: () => void;
   onTransfer: () => void;
+  onArchive: () => void;
+  onHistory: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -75,6 +79,14 @@ function AccountMenu({
             <ArrowLeftRight aria-hidden="true" size={13} />
             Transferir
           </button>
+          <button onClick={() => run(onHistory)} role="menuitem" type="button">
+            <History aria-hidden="true" size={13} />
+            Histórico da conta
+          </button>
+          <button className="wlx-menu-danger" onClick={() => run(onArchive)} role="menuitem" type="button">
+            <Archive aria-hidden="true" size={13} />
+            Arquivar conta
+          </button>
         </div>
       ) : null}
     </div>
@@ -87,6 +99,8 @@ type WalletAccountsGridProps = {
   onEditAccount: (account: Account) => void;
   onAdjustAccount: (walletAccount: WalletAccount) => void;
   onTransferAccount: (account: Account) => void;
+  onArchiveAccount: (walletAccount: WalletAccount) => void;
+  onHistoryAccount: (account: Account) => void;
 };
 
 export function WalletAccountsGrid({
@@ -95,6 +109,8 @@ export function WalletAccountsGrid({
   onEditAccount,
   onAdjustAccount,
   onTransferAccount,
+  onArchiveAccount,
+  onHistoryAccount,
 }: WalletAccountsGridProps) {
   return (
     <div className="wlx-accounts">
@@ -120,7 +136,9 @@ export function WalletAccountsGrid({
               <AccountMenu
                 account={account}
                 onAdjust={() => onAdjustAccount(walletAccount)}
+                onArchive={() => onArchiveAccount(walletAccount)}
                 onEdit={() => onEditAccount(account)}
+                onHistory={() => onHistoryAccount(account)}
                 onTransfer={() => onTransferAccount(account)}
               />
             </div>
