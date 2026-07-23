@@ -7206,6 +7206,401 @@ a {
 
 /* ==================== [WS3] Metas (glx-*) ==================== */
 
+.app-main:has(.glx-screen) {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
+.glx-screen {
+  display: flex;
+  min-height: calc(100vh - 64px);
+  flex-direction: column;
+}
+
+.glx-content {
+  display: grid;
+  align-content: start;
+  flex: 1;
+  gap: 14px;
+  padding: 20px 22px 26px;
+}
+
+.glx-screen .txx-chip[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--green) 30%, var(--line));
+  background: var(--green-soft);
+  color: var(--green-strong);
+}
+
+.glx-action-error {
+  margin: 0;
+  padding: 10px 13px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.glx-hero {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.glx-hero-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  padding: 18px 20px;
+}
+
+.glx-hero-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 9px;
+}
+
+.glx-hero-value strong {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.glx-hero-value span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.glx-hero-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.glx-hero-chips {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding-left: 24px;
+  border-left: 1px solid var(--line);
+}
+
+.glx-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.glx-status-chip i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.glx-hero-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-muted);
+}
+
+.glx-hero-note span {
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.glx-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.glx-card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 15px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.glx-card-canceled {
+  opacity: 0.68;
+}
+
+.glx-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.glx-card-head strong {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.glx-status-pill {
+  flex: 0 0 auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.glx-status-pill[data-tone="blue"] {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.glx-status-pill[data-tone="green"] {
+  background: var(--green-soft);
+  color: var(--green-strong);
+}
+
+.glx-status-pill[data-tone="red"] {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.glx-status-pill[data-tone="neutral"] {
+  background: var(--soft);
+  color: var(--text-muted);
+}
+
+.glx-card-description {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.glx-card-amounts {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.glx-card-amounts strong {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.glx-card-amounts span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.glx-progress {
+  overflow: hidden;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--soft);
+}
+
+.glx-hero .glx-progress {
+  height: 12px;
+  margin-top: 13px;
+}
+
+.glx-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--blue), color-mix(in srgb, var(--blue) 55%, var(--green)));
+}
+
+.glx-progress-fill-complete {
+  background: var(--green);
+}
+
+.glx-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 10.5px;
+}
+
+.glx-deadline-overdue {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.glx-card-progress {
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.glx-card-monthly {
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 10.5px;
+}
+
+.glx-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.glx-card-actions .txx-chip {
+  height: 30px;
+  font-size: 10.5px;
+}
+
+.glx-action-primary {
+  border-color: color-mix(in srgb, var(--green) 35%, var(--line));
+  background: var(--green-soft);
+  color: var(--green-strong);
+}
+
+.glx-action-danger {
+  color: var(--danger);
+}
+
+.glx-shield-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--blue) 22%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--blue-soft);
+}
+
+.glx-shield-note svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.glx-shield-note span {
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.glx-contributions {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.glx-contributions-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.glx-contribution-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+  list-style: none;
+}
+
+.glx-contribution-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.glx-contribution-icon {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.glx-contribution-row > div {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 1px;
+}
+
+.glx-contribution-row > div strong {
+  font-size: 11.5px;
+}
+
+.glx-contribution-row > div span {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.glx-contribution-row > strong {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.glx-skeleton {
+  display: grid;
+  gap: 10px;
+}
+
+.glx-skeleton span {
+  display: block;
+  height: 120px;
+  border-radius: 16px;
+  background: linear-gradient(100deg, var(--soft) 40%, var(--surface-muted) 50%, var(--soft) 60%);
+  background-size: 200% 100%;
+  animation: tlx-shimmer 1.4s ease-in-out infinite;
+}
+
 /* ==================== [WS4+WS5] Carteira: arquivar conta + históricos (wlx-history-*, wlx-purchases-*) ==================== */
 
 /* ==================== [WS6] Mobile: bottom nav (bnx-*) + varredura responsiva ==================== */
